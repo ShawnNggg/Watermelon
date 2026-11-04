@@ -3,6 +3,7 @@ name: Release
 on:
   push:
     tags: [ "v*" ]
+  workflow_dispatch:
 
 # ⚠️ 首次使用前必须在 GitHub repo Settings → Secrets 里添加：
 #   TAURI_SIGNING_PRIVATE_KEY  → 本地私钥文件 ~/.tauri/watermelon.key 的完整内容
@@ -17,16 +18,13 @@ jobs:
       matrix:
         include:
           - os: macos-latest
-            target: universal-apple-darwin   # x86_64 + aarch64 合并（但需要交叉编译）
-            # macOS 当前 runner 是 x86_64，要 Apple Silicon 就换 macos-latest-arm64
+            target: universal-apple-darwin
             bundle: dmg
     runs-on: ${{ matrix.os }}
     permissions:
       contents: write
     env:
-      # updater 签名私钥（从 GitHub Secret 注入）
       TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
-      # 同时写一份到文件，tauri build 两种方式都能认
       TAURI_SIGNING_PRIVATE_KEY_PATH: "/tmp/tauri-private.key"
     steps:
       - uses: actions/checkout@v4
@@ -52,8 +50,6 @@ jobs:
           npm run tauri build -- --bundles ${{ matrix.bundle }}
         shell: bash
 
-      # tauri build 完成后会在 target/release/bundle/ 里产出：
-      #   dmg/*.dmg, macos/*.app.tar.gz, 以及 updater 需要的 latest.json（或 latest-macos.json）
       - name: List artifacts
         run: find widget/src-tauri/target/release/bundle -type f | sort
 
@@ -66,26 +62,4 @@ jobs:
             widget/src-tauri/target/release/bundle/dmg/*.dmg
             widget/src-tauri/target/release/bundle/macos/*.app.tar.gz
             widget/src-tauri/target/release/bundle/**/latest*.json
-
-# 手动触发 build（没有 tag 也能跑，用于测试签名链路）
-manual-build:
-  runs-on: macos-latest
-  permissions:
-    contents: write
-  env:
-    TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
-  steps:
-    - uses: actions/checkout@v4
-    - uses: actions/setup-node@v4
-      with:
-        node-version: 20
-    - uses: dtolnay/rust-toolchain@stable
-    - name: Build
-      working-directory: widget
-      run: npm ci && npm run tauri build -- --bundles dmg
-    - uses: softprops/action-gh-release@v2
-      with:
-        tag_name: test-${{ github.run_id }}
-        name: Test Build #${{ github.run_number }}
-        draft: true
-        files: widget/src-tauri/target/release/bundle/**/*
+            widget/src-tauri/target/release/bundle/**/*.tar.gz.sig
