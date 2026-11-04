@@ -46,7 +46,7 @@
     "updater": {
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEUyNkUzNjRGQzgyOEJCNzMKUldSenV5aklUelp1NG1EQVhBL3RXZitBSWx2LzRkZTNWZUpZNndsKzRXZGZ5N1dRaFp6dFU1RlkK",
       "endpoints": [
-        "https://github.com/yourname/Watermelon/releases/latest/download/latest.json"
+        "https://github.com/ShawnNggg/-/releases/latest/download/latest.json"
       ]
     }
   }
