@@ -1,0 +1,1800 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>下班啦 · Watermelon</title>
+<style>
+  :root {
+    /* 皮肤系统：下面每个变量都可以被 SKINS 里的同名键覆盖 */
+    --flesh: #FF5D73;        /* 主色：果肉红 */
+    --flesh-light: #FFD0D8;  /* 主色浅 */
+    --flesh-mid: #FF8A9A;    /* 主色中 */
+    --rind-dark: #1F8A5B;    /* 次色：瓜皮绿 */
+    --rind-light: #7BD389;
+    --seed: #232323;
+    --cream: #FFF9F2;
+    --panel-rgb: 255, 252, 246;  /* 挂件面板底色（RGB，用于 rgba） */
+    --bubble: #FFFFFF;
+    --accent-soft: #FFF0F2;
+    --line: #EDE7DE;
+    --green-soft: #E9F7EE;
+    --card-bg: #F2FBF4;
+    --card-border: #D8EFDD;
+    --btn-soft: #F4F0EA;
+    --dog-body: #F7E6C9;
+    --dog-ear: #C08A54;
+    --dog-inner: #FDEFDA;
+    --dog-line: #EAD3AE;
+    --cheek: #FFB3C0;
+    --text: #2B2B2B;
+    --text-dim: #9A938B;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: ui-rounded, "SF Pro Rounded", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+    background: #EFEBE3;
+    min-height: 100vh;
+    display: flex; flex-direction: column; align-items: center;
+    padding: 30px 16px 60px;
+    color: var(--text);
+  }
+  .stage-hint { font-size: 12px; color: var(--text-dim); margin-bottom: 14px; }
+
+  /* Tauri 真挂件模式：透明背景 + 隐藏演示元素 */
+  body.in-app { background: transparent; padding: 6px 8px 8px; user-select: none; overflow: hidden; }
+  body.in-app .stage-hint, body.in-app .demo-row, body.in-app .demo-note { display: none; }
+
+  /* ============ 挂件本体 ============ */
+  .widget {
+    width: 340px;
+    background: rgba(var(--panel-rgb), .92);
+    backdrop-filter: blur(20px);
+    border-radius: 28px;
+    box-shadow: 0 18px 50px rgba(35,35,35,.18), 0 0 0 1px rgba(255,255,255,.6) inset;
+    padding: 16px 18px 18px;
+    position: relative;
+    overflow: hidden;
+  }
+  /* 顶部拖拽把手（仅真挂件模式显示） */
+  .drag-bar { display: none; }
+
+  /* ---- 紧凑模式：内容不变，占用面积约减半 ---- */
+  body.in-app .widget {
+    width: 100%;
+    padding: 6px 12px 10px;
+    border-radius: 20px;
+    /* 常驻透明窗口上去掉实时模糊，GPU 开销显著下降 */
+    background: rgba(var(--panel-rgb), .97);
+    backdrop-filter: none;
+    box-shadow: 0 8px 22px rgba(35,35,35,.2), 0 0 0 1px rgba(255,255,255,.5) inset;
+    /* 高度交给 JS 自适应窗口；超屏时才内部滚动，滚动条永久隐藏 */
+    overflow-y: auto;
+  }
+  /* 彻底隐藏滚动条：窗口高度随内容变化，不需要用户滚动 */
+  html, body, .widget { scrollbar-width: none; }
+  body::-webkit-scrollbar, .widget::-webkit-scrollbar { width: 0; height: 0; }
+  body.in-app .drag-bar { display: block; height: 10px; margin: -6px -12px 2px; cursor: grab; }
+  body.in-app .drag-bar:active { cursor: grabbing; }
+  body.in-app .bubble { font-size: 11px; min-height: 0; height: 28px; padding: 2px 9px; line-height: 1.4; cursor: grab; overflow: hidden; }
+  body.in-app .dog { width: 104px; height: 98px; }
+  body.in-app .count-row { margin-top: 0; cursor: grab; }
+  body.in-app .count-row > * { pointer-events: none; } /* 点空白处可直接拖窗口 */
+  body.in-app .status-chip { font-size: 10px; padding: 2px 9px; margin-bottom: 2px; }
+  body.in-app .daily-ring { width: 108px; height: 108px; margin: 2px auto 0; }
+  body.in-app .ring-time { font-size: 17px; }
+  body.in-app .ring-time .ms { font-size: 9px; }
+  body.in-app .ring-label { font-size: 8px; margin-top: 2px; }
+  body.in-app .ring-pct { font-size: 9px; }
+  body.in-app .week-bar { margin-top: 4px; }
+  body.in-app .week-bar .week-labels { font-size: 8px; margin-bottom: 1px; }
+  body.in-app .week-bar .week-track { height: 8px; }
+  body.in-app .week-summary { font-size: 9px; margin-top: 2px; }
+  body.in-app .weekend-bar .w-track { height: 6px; }
+  body.in-app .weekend-info { font-size: 9px; margin-top: 1px; }
+  body.in-app .money-row { margin-top: 8px; gap: 6px; }
+  body.in-app .money-card { padding: 4px 8px; border-radius: 12px; }
+  body.in-app .money-card .t { font-size: 9.5px; }
+  body.in-app .money-card .v { font-size: 13px; }
+  body.in-app .main-btn { margin-top: 8px; padding: 9px; font-size: 13.5px; border-radius: 14px; box-shadow: none; }
+  body.in-app .tool-row { margin-top: 5px; }
+  body.in-app .tool-row .todo-hint { font-size: 10.5px; }
+  body.in-app .icon-btn { width: 24px; height: 24px; font-size: 12px; border-radius: 8px; }
+
+  /* 窗口不可见时暂停全部动画，避免后台空转耗电 */
+  body.paused *, body.paused *::before, body.paused *::after {
+    animation-play-state: paused !important;
+    transition: none !important;
+  }
+
+  /* 顶部：气泡（全宽）+ 小狗（居中） */
+  .pet-row { display: flex; flex-direction: column; gap: 2px; }
+  .bubble {
+    background: var(--bubble);
+    border-radius: 14px;
+    border-bottom-left-radius: 4px;
+    padding: 8px 12px;
+    font-size: 12.5px;
+    line-height: 1.5;
+    box-shadow: 0 3px 10px rgba(35,35,35,.08);
+    min-height: 38px;
+    display: flex; align-items: center; justify-content: center;
+    text-align: center;
+    transition: opacity .3s;
+    position: relative; z-index: 5;
+  }
+  .bubble.fade { opacity: 0; }
+
+  /* ============ 小狗动画系统（多形态多动作） ============ */
+  .dog { width: 150px; height: 141px; overflow: visible; align-self: center; cursor: pointer; }
+  .dog * { transform-box: fill-box; }
+
+  /* 常驻微动作 */
+  .tail { transform-origin: 0% 50%; animation: wag .65s ease-in-out infinite alternate; transition: transform .35s; }
+  @keyframes wag { from { transform: rotate(-10deg); } to { transform: rotate(16deg); } }
+  .breath { transform-origin: 50% 90%; animation: breathe 2.6s ease-in-out infinite; }
+  @keyframes breathe { 0%,100% { transform: scale(1,1); } 50% { transform: scale(1.02,.985); } }
+  .eye { transform-origin: 50% 50%; animation: blink 4s infinite; }
+  @keyframes blink { 0%,93%,100% { transform: scaleY(1); } 96% { transform: scaleY(.1); } }
+  .gaze { transition: transform .35s; }
+  .head { transform-origin: 50% 85%; animation: tilt 9s ease-in-out infinite; }
+  @keyframes tilt { 0%,78%,100% { transform: rotate(0deg); } 84% { transform: rotate(-7deg); } 92% { transform: rotate(5deg); } }
+  .ear-l { transform-origin: 80% 20%; animation: earL 9s ease-in-out infinite; transition: transform .35s; }
+  .ear-r { transform-origin: 20% 20%; animation: earR 9s ease-in-out infinite; transition: transform .35s; }
+  @keyframes earL { 0%,78%,100% { transform: rotate(0); } 84% { transform: rotate(-12deg); } 92% { transform: rotate(6deg); } }
+  @keyframes earR { 0%,78%,100% { transform: rotate(0); } 84% { transform: rotate(-8deg); } 92% { transform: rotate(10deg); } }
+  .tongue { opacity: 0; transition: opacity .3s; }
+  .zzz, .heart, .crumb, .sweat, .snooze, .scold-mark { opacity: 0; }
+  .paw-l, .paw-r { transition: opacity .25s; }
+
+  /* 形态与道具切换 */
+  .prop { opacity: 0; transition: opacity .3s; }
+  .dog-sit { transition: opacity .3s; }
+  .dog-lie, .dog-stand, .dog-toilet { opacity: 0; transition: opacity .3s; }
+  .widget[data-act="present"] .dog-sit,
+  .widget[data-act="toilet"] .dog-sit,
+  .widget[data-act="sleep"] .dog-sit { opacity: 0; }
+  .widget[data-act="present"] .dog-stand,
+  .widget[data-act="toilet"] .dog-toilet,
+  .widget[data-act="sleep"] .dog-lie { opacity: 1; }
+
+  /* 搬砖 · 敲键盘 / 加班共用笔记本 */
+  .widget[data-act="typing"] .prop-laptop,
+  .widget[data-act="overtime"] .prop-laptop { opacity: 1; }
+  .widget[data-act="typing"] .paw-l { animation: tapL .34s ease-in-out infinite alternate; }
+  .widget[data-act="typing"] .paw-r { animation: tapR .34s ease-in-out infinite alternate .17s; }
+  .widget[data-act="overtime"] .paw-l { animation: tapL .95s ease-in-out infinite alternate; }
+  .widget[data-act="overtime"] .paw-r { animation: tapR .95s ease-in-out infinite alternate .45s; }
+  @keyframes tapL { from { transform: translate(4px,-15px); } to { transform: translate(4px,-18px); } }
+  @keyframes tapR { from { transform: translate(-4px,-15px); } to { transform: translate(-4px,-18px); } }
+  .widget[data-act="typing"] .gaze, .widget[data-act="overtime"] .gaze { transform: translateY(2.2px); }
+  .widget[data-act="typing"] .head { animation: typeHead 4.5s ease-in-out infinite; }
+  @keyframes typeHead { 0%,100% { transform: rotate(2deg) translateY(1.5px); } 50% { transform: rotate(2.5deg) translateY(2.5px); } }
+
+  /* 搬砖 · 做汇报 */
+  .pointer-arm { transform-origin: 0% 100%; }
+  .widget[data-act="present"] .pointer-arm { animation: pointTap 2.8s ease-in-out infinite; }
+  @keyframes pointTap { 0%,100% { transform: rotate(0); } 30% { transform: rotate(-6deg); } 45% { transform: rotate(0); } 60% { transform: rotate(-6deg); } 75% { transform: rotate(0); } }
+  .widget[data-act="present"] .head-s { transform-origin: 50% 85%; animation: presentBob 2.8s ease-in-out infinite; }
+  @keyframes presentBob { 0%,100% { transform: rotate(0); } 40% { transform: rotate(2.5deg); } }
+  .widget[data-act="present"] .jaw,
+  .widget[data-act="phone"] .jaw { transform-origin: 50% 0%; animation: talk .42s ease-in-out infinite; }
+  @keyframes talk { 0%,100% { transform: scaleY(1); } 50% { transform: scaleY(1.8); } }
+
+  /* 搬砖 · 挨骂 */
+  .widget[data-act="scolded"] .head { animation: bowHead 3.6s ease-in-out infinite; }
+  @keyframes bowHead {
+    0%,60%,100% { transform: rotate(9deg) translateY(4px); }
+    66% { transform: rotate(12deg) translateY(6.5px); }
+    72% { transform: rotate(9deg) translateY(4px); }
+    78% { transform: rotate(12deg) translateY(6px); }
+    84% { transform: rotate(9deg) translateY(4px); }
+  }
+  .widget[data-act="scolded"] .ear-l { animation: none; transform: rotate(22deg); }
+  .widget[data-act="scolded"] .ear-r { animation: none; transform: rotate(-22deg); }
+  .widget[data-act="scolded"] .tail { animation: none; transform: rotate(-40deg); }
+  .widget[data-act="scolded"] .gaze { transform: translateY(3px); }
+  .widget[data-act="scolded"] .dog-sit { animation: tremble 3.6s ease-in-out infinite; }
+  @keyframes tremble { 0%,7%,15%,100% { transform: translateX(0); } 9% { transform: translateX(-1.3px); } 11% { transform: translateX(1.3px); } 13% { transform: translateX(-.6px); } }
+  .widget[data-act="scolded"] .scold-mark { opacity: 1; transform-origin: 50% 50%; animation: markPop 3.6s ease-out infinite; }
+  @keyframes markPop { 0%,7%,16%,100% { transform: scale(0); opacity: 0; } 9% { transform: scale(1.3); opacity: 1; } 14% { transform: scale(1); opacity: 1; } }
+  .widget[data-act="scolded"] .sweat,
+  .widget[data-act="overtime"] .sweat { opacity: 1; animation: sweatDrop 1.8s ease-in infinite; }
+  .widget[data-act="scolded"] .sweat.s2,
+  .widget[data-act="overtime"] .sweat.s2 { animation-delay: .9s; }
+  @keyframes sweatDrop { 0% { transform: translateY(0); opacity: 0; } 20% { opacity: 1; } 100% { transform: translateY(20px); opacity: 0; } }
+
+  /* 搬砖 · 打瞌睡 */
+  .widget[data-act="dozing"] .eye { animation: none; transform: scaleY(.3); }
+  .widget[data-act="dozing"] .head { animation: nodOff 5s ease-in-out infinite; }
+  @keyframes nodOff { 0%,70%,100% { transform: rotate(0) translateY(0); } 80% { transform: rotate(2deg) translateY(4px); } 90% { transform: rotate(0) translateY(0); } }
+  .widget[data-act="dozing"] .snooze { opacity: 1; animation: zfloat2 2.4s ease-in-out infinite; }
+  @keyframes zfloat2 { 0% { transform: translate(0,0) scale(.6); opacity: 0; } 30% { opacity: 1; } 100% { transform: translate(10px,-22px) scale(1.05); opacity: 0; } }
+  .widget[data-act="dozing"] .tail { animation-duration: 1.6s; }
+
+  /* 搬砖 · 打电话 */
+  .widget[data-act="phone"] .prop-phone { opacity: 1; }
+  .widget[data-act="phone"] .paw-r { opacity: 0; }
+  .widget[data-act="phone"] .head { animation: phoneTalk 4s ease-in-out infinite; }
+  @keyframes phoneTalk {
+    0%,100% { transform: rotate(7deg) translateY(0); }
+    20% { transform: rotate(7deg) translateY(2px); }
+    40% { transform: rotate(7deg) translateY(0); }
+    60% { transform: rotate(7deg) translateY(2px); }
+    80% { transform: rotate(7deg) translateY(0); }
+  }
+  .widget[data-act="phone"] .ear-r { animation: none; transform: rotate(-16deg); }
+  .widget[data-act="phone"] .gaze { transform: translateY(-1px); }
+
+  /* 摸鱼 · 狗爪拿瓜 */
+  .prop-melon { transform-origin: 50% 50%; transition: opacity .3s, transform .5s cubic-bezier(.34,1.56,.64,1); }
+  .widget[data-act="melon"] .prop-melon { opacity: 1; transform: translate(26px,-34px) rotate(-18deg); }
+  .widget[data-act="melon"] .paw-l, .widget[data-act="melon"] .paw-r { opacity: 0; }
+  .widget[data-act="melon"] .head { animation: nom .55s ease-in-out infinite; }
+  @keyframes nom { 0%,100% { transform: rotate(3deg) translateY(0); } 50% { transform: rotate(3deg) translateY(2.5px); } }
+  .widget[data-act="melon"] .jaw { transform-origin: 50% 0%; animation: chew .55s ease-in-out infinite; }
+  @keyframes chew { 0%,100% { transform: scaleY(1); } 50% { transform: scaleY(1.9); } }
+  .widget[data-act="melon"] .tongue { opacity: 1; }
+  .widget[data-act="melon"] .tail { animation-duration: .32s; }
+  .widget[data-act="melon"] .ear-l, .widget[data-act="melon"] .ear-r { animation: none; }
+  .widget[data-act="melon"] .gaze { transform: translateY(-1.5px); }
+  .widget[data-act="melon"] .crumb { opacity: 1; animation: drop 1.1s ease-in infinite; }
+  .widget[data-act="melon"] .crumb.c2 { animation-delay: .55s; }
+  @keyframes drop { 0% { transform: translateY(0); opacity: 0; } 15% { opacity: 1; } 100% { transform: translateY(30px); opacity: 0; } }
+
+  /* 摸鱼 · 蹲坑刷手机 */
+  .widget[data-act="toilet"] .thumb { animation: swipe 2.4s ease-in-out infinite; }
+  @keyframes swipe { 0%,60%,100% { transform: translateY(0); } 72% { transform: translateY(-7px); } 84% { transform: translateY(-7px); } }
+  .widget[data-act="toilet"] .leg-l { transform-origin: 50% 0%; animation: swingL 1.2s ease-in-out infinite alternate; }
+  .widget[data-act="toilet"] .leg-r { transform-origin: 50% 0%; animation: swingR 1.2s ease-in-out infinite alternate; }
+  @keyframes swingL { from { transform: rotate(5deg); } to { transform: rotate(-5deg); } }
+  @keyframes swingR { from { transform: rotate(-5deg); } to { transform: rotate(5deg); } }
+  .widget[data-act="toilet"] .glow { opacity: .16; transition: opacity .5s; }
+  .widget[data-act="toilet"] .head-t { transform-origin: 50% 85%; animation: chuckle 4.2s ease-in-out infinite; }
+  @keyframes chuckle { 0%,82%,100% { transform: translateY(0); } 86% { transform: translateY(1.6px); } 90% { transform: translateY(0); } 94% { transform: translateY(1.6px); } }
+  .gaze-t { transform: translateY(3px); }
+
+  /* 加班硬撑 */
+  .widget[data-act="overtime"] .head { animation: nodOff 5s ease-in-out infinite; }
+  .widget[data-act="overtime"] .eye { animation: doze 5s infinite; }
+  @keyframes doze { 0%,70%,100% { transform: scaleY(1); } 78%,86% { transform: scaleY(.25); } }
+  .widget[data-act="overtime"] .tail { animation-duration: 1.4s; }
+
+  /* 下班撒欢 */
+  .widget[data-act="happy"] .breath { animation: hop .55s cubic-bezier(.36,0,.64,1) infinite; }
+  @keyframes hop {
+    0%,100% { transform: translateY(0) scale(1,1); }
+    30% { transform: translateY(-14px) scale(.98,1.03); }
+    55% { transform: translateY(0) scale(1.04,.94); }
+    70% { transform: translateY(-4px) scale(1,1); }
+  }
+  .widget[data-act="happy"] .tail { animation-duration: .22s; }
+  .widget[data-act="happy"] .tongue { opacity: 1; }
+  .widget[data-act="happy"] .head { animation: shake .55s ease-in-out infinite; }
+  @keyframes shake { 0%,100% { transform: rotate(-4deg); } 50% { transform: rotate(4deg); } }
+  .widget[data-act="happy"] .ear-l { transform-origin: 80% 20%; animation: flapL .55s ease-in-out infinite; }
+  .widget[data-act="happy"] .ear-r { transform-origin: 20% 20%; animation: flapR .55s ease-in-out infinite; }
+  @keyframes flapL { 0%,100% { transform: rotate(-6deg); } 50% { transform: rotate(10deg); } }
+  @keyframes flapR { 0%,100% { transform: rotate(6deg); } 50% { transform: rotate(-10deg); } }
+  .widget[data-act="happy"] .heart { opacity: 1; animation: floatUp 1.6s ease-out infinite; }
+  .widget[data-act="happy"] .heart.h2 { animation-delay: .55s; }
+  .widget[data-act="happy"] .heart.h3 { animation-delay: 1.1s; }
+  @keyframes floatUp { 0% { transform: translateY(0) scale(.4); opacity: 0; } 25% { opacity: 1; } 100% { transform: translateY(-46px) scale(1); opacity: 0; } }
+
+  /* 周末趴睡 */
+  .widget[data-act="sleep"] .zzz { opacity: 1; animation: zfloat 2.2s ease-in-out infinite; }
+  .widget[data-act="sleep"] .zzz.z2 { animation-delay: .7s; font-size: 15px; }
+  .widget[data-act="sleep"] .zzz.z3 { animation-delay: 1.4s; font-size: 19px; }
+  @keyframes zfloat { 0% { transform: translate(0,0) scale(.6); opacity: 0; } 30% { opacity: 1; } 100% { transform: translate(14px,-30px) scale(1.15); opacity: 0; } }
+  .widget[data-act="sleep"] .breath-lie { transform-origin: 50% 100%; animation: sleepBreathe 3.4s ease-in-out infinite; }
+  @keyframes sleepBreathe { 0%,100% { transform: scale(1,1); } 50% { transform: scale(1.035,.96); } }
+  .widget[data-act="sleep"] .tail-lie { transform-origin: 0% 50%; animation: wag 3s ease-in-out infinite alternate; }
+
+  /* 中部：倒计时 */
+  .count-row { text-align: center; margin-top: 2px; }
+  .status-chip {
+    display: inline-block; font-size: 11px; font-weight: 700;
+    padding: 3px 12px; border-radius: 999px;
+    background: var(--accent-soft); color: var(--flesh); margin-bottom: 4px;
+  }
+  .status-chip.green { background: var(--green-soft); color: var(--rind-dark); }
+  .big-time {
+    font-size: 40px; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1.15;
+  }
+  .big-time .ms { font-size: 18px; color: var(--text-dim); }
+  .big-text { font-size: 24px; font-weight: 800; }
+  .count-label { font-size: 11.5px; color: var(--text-dim); margin-top: 2px; }
+
+  /* ============ 当天圆环时钟 ============ */
+  .daily-ring {
+    width: 132px; height: 132px; margin: 4px auto 2px; position: relative;
+  }
+  .daily-ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+  .daily-ring .ring-bg { stroke: var(--line); fill: none; }
+  .daily-ring .ring-fg {
+    stroke: var(--flesh); fill: none; stroke-linecap: round;
+    transition: stroke-dashoffset .35s linear, stroke .3s;
+    filter: drop-shadow(0 0 2px rgba(255,93,115,.25));
+  }
+  .daily-ring .ring-fg.green { stroke: var(--rind-dark); filter: none; }
+  .daily-ring .ring-fg.moyu { stroke: var(--flesh-mid); }
+  .daily-ring .ring-moyu { stroke: var(--flesh-light); fill: none; }
+  .ring-center {
+    position: absolute; inset: 0; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; text-align: center;
+    transform: rotate(0deg);
+  }
+  .ring-time {
+    font-size: 22px; font-weight: 800; font-variant-numeric: tabular-nums;
+    color: var(--text); line-height: 1; letter-spacing: -.3px;
+  }
+  .ring-time .ms { font-size: 10px; color: var(--text-dim); }
+  .ring-label { font-size: 9.5px; color: var(--text-dim); margin-top: 3px; line-height: 1.2; }
+  .ring-pct { font-size: 10px; color: var(--flesh); font-weight: 700; margin-top: 1px; }
+
+  /* ============ 一周进度条 ============ */
+  .week-bar { margin-top: 6px; }
+  .week-bar .week-labels {
+    display: grid; grid-template-columns: repeat(7, 1fr);
+    font-size: 9px; color: var(--text-dim); text-align: center;
+    margin-bottom: 2px; font-variant-numeric: tabular-nums;
+  }
+  .week-bar .week-labels .today { color: var(--flesh); font-weight: 700; }
+  .week-bar .week-track {
+    height: 10px; border-radius: 6px; background: var(--line);
+    display: flex; gap: 2px; overflow: hidden;
+  }
+  .week-bar .seg {
+    flex: 1; border-radius: 3px; background: var(--line); position: relative;
+  }
+  .week-bar .seg.work { background: var(--green-soft); }
+  .week-bar .seg.done { background: var(--rind-dark); }
+  .week-bar .seg.today { background: var(--green-soft); }
+  .week-bar .seg.today::after {
+    content: ""; position: absolute; inset: 0; border-radius: 3px;
+    background: linear-gradient(90deg, var(--flesh-mid), var(--flesh));
+  }
+  .week-bar .seg.rest { background: var(--cream); opacity: .55; }
+  .week-bar .seg.ot { box-shadow: 0 0 0 1px var(--flesh-mid) inset; }
+  .week-summary {
+    text-align: center; font-size: 10px; color: var(--text-dim);
+    margin-top: 3px; font-variant-numeric: tabular-nums;
+  }
+  .week-summary b { color: var(--flesh); }
+
+  /* ============ 周末倒计时进度 ============ */
+  .weekend-bar { margin-top: 4px; }
+  .weekend-bar .w-track {
+    height: 8px; border-radius: 4px; background: var(--line); overflow: hidden; position: relative;
+  }
+  .weekend-bar .w-fill {
+    height: 100%; background: linear-gradient(90deg, var(--rind-light), var(--rind-dark));
+    border-radius: 4px; transition: width .4s linear;
+  }
+  .weekend-bar .w-marker {
+    position: absolute; top: 0; bottom: 0; width: 2px; background: var(--flesh);
+  }
+  .weekend-info {
+    font-size: 10.5px; color: var(--text-dim); margin-top: 2px; text-align: center;
+    font-variant-numeric: tabular-nums;
+  }
+  .weekend-info b { color: var(--rind-dark); }
+
+  /* 迷你西瓜进度条（留作周进度条的细填充样式） */
+  .bar {
+    height: 14px; border-radius: 999px; margin-top: 10px;
+    background: var(--green-soft);
+    border: 2px solid var(--rind-dark);
+    position: relative; overflow: hidden;
+  }
+  .bar .fill {
+    position: absolute; inset: 0; width: 0%;
+    background: linear-gradient(90deg, var(--flesh-mid), var(--flesh));
+    border-radius: 999px;
+    transition: width .3s linear;
+  }
+  .bar .moyu-seg { position: absolute; top: 0; bottom: 0; background: var(--flesh-light); }
+  .weekend-line { text-align: center; font-size: 12.5px; margin-top: 8px; color: var(--text); }
+  .weekend-line b { color: var(--flesh); }
+
+  /* 钱 */
+  .money-row { display: flex; gap: 8px; margin-top: 12px; }
+  .money-card {
+    flex: 1; border-radius: 16px; padding: 8px 10px; text-align: center;
+    background: var(--card-bg); border: 1px solid var(--card-border);
+  }
+  .money-card.loss { background: var(--accent-soft); border-color: var(--flesh-light); }
+  .money-card .t { font-size: 10.5px; color: var(--text-dim); }
+  .money-card .v {
+    font-size: 16px; font-weight: 800; font-variant-numeric: tabular-nums;
+    color: var(--rind-dark); margin-top: 1px;
+  }
+  .money-card.loss .v { color: var(--flesh); }
+  .money-card.hidden { display: none; }
+
+  /* 主按钮：唯一的交互 */
+  .main-btn {
+    width: 100%; margin-top: 12px; border: none; border-radius: 18px;
+    padding: 13px; font-size: 16px; font-weight: 800; cursor: pointer;
+    font-family: inherit; color: #fff; background: var(--rind-dark);
+    box-shadow: 0 6px 18px rgba(31,138,91,.35);
+    transition: transform .12s;
+  }
+  .main-btn:active { transform: scale(.97); }
+  .main-btn.moyu-ing { background: var(--flesh); box-shadow: 0 6px 18px rgba(255,93,115,.35); }
+  .main-btn.ot-ing { background: var(--flesh-mid); color: #fff; box-shadow: 0 6px 18px rgba(255,138,154,.3); }
+
+  /* 底部工具行 */
+  .tool-row { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; }
+  .tool-row .todo-hint { font-size: 11.5px; color: var(--text-dim); }
+  .tool-row .todo-hint b { color: var(--flesh); }
+  .icon-btn {
+    border: none; background: var(--btn-soft); border-radius: 10px;
+    width: 30px; height: 30px; cursor: pointer; font-size: 14px; color: var(--text-dim);
+  }
+
+  /* 抽屉（设置 / 待办） */
+  .drawer { display: none; margin-top: 12px; border-top: 1px dashed var(--line); padding-top: 12px; }
+  .drawer.open { display: block; }
+  .drawer h3 { font-size: 13px; margin-bottom: 8px; }
+  .field label { font-size: 11.5px; color: var(--text-dim); display: block; margin-bottom: 4px; }
+  .drawer input[type=time], .drawer input[type=number] {
+    width: 100%; border: 1.5px solid var(--line); border-radius: 10px; padding: 7px 9px;
+    font-size: 13px; font-family: inherit; background: var(--cream);
+  }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+  .wd-row { display: flex; gap: 4px; margin-bottom: 10px; }
+  .wd-btn {
+    flex: 1; border: 1.5px solid var(--line); background: var(--cream); border-radius: 8px;
+    padding: 6px 0; font-size: 12px; cursor: pointer; font-family: inherit; color: var(--text-dim);
+  }
+  .wd-btn.on { background: var(--rind-dark); border-color: var(--rind-dark); color: #fff; }
+  .seg-row { display: flex; gap: 4px; }
+  .seg-btn {
+    flex: 1; border: 1.5px solid var(--line); background: var(--cream); border-radius: 8px;
+    padding: 6px 0; font-size: 11px; cursor: pointer; font-family: inherit; color: var(--text-dim);
+  }
+  .seg-btn.on { background: var(--flesh); border-color: var(--flesh); color: #fff; font-weight: 700; }
+  .ov-row { display: flex; gap: 6px; flex-wrap: wrap; }
+  .chip-btn {
+    border: 1.5px solid var(--line); background: var(--cream); border-radius: 999px;
+    padding: 5px 11px; font-size: 11.5px; cursor: pointer; font-family: inherit;
+  }
+  .chip-btn.on { background: var(--seed); color: #fff; border-color: var(--seed); }
+  ul.todo-list { list-style: none; }
+  ul.todo-list li { display: flex; align-items: center; gap: 8px; padding: 6px 0; font-size: 12.5px; border-bottom: 1px solid var(--line); }
+  ul.todo-list li:last-child { border-bottom: none; }
+  ul.todo-list li.done .t { text-decoration: line-through; color: var(--text-dim); }
+  ul.todo-list input[type=checkbox] { accent-color: var(--rind-dark); }
+  ul.todo-list .t { flex: 1; }
+  ul.todo-list .del { border: none; background: none; color: var(--text-dim); cursor: pointer; }
+  .todo-add { display: flex; gap: 6px; margin-bottom: 6px; }
+  .todo-add input { flex: 1; border: 1.5px solid var(--line); border-radius: 10px; padding: 7px 9px; font-size: 12.5px; font-family: inherit; background: var(--cream); }
+  .todo-add button { border: none; border-radius: 10px; background: var(--rind-dark); color: #fff; padding: 0 12px; cursor: pointer; font-family: inherit; }
+
+  /* 皮肤选择：一行色块，点一下整只瓜换装 */
+  .skin-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+  .skin-btn {
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    border: 1.5px solid var(--line); background: var(--cream); border-radius: 10px;
+    padding: 5px 2px 4px; cursor: pointer; font-family: inherit;
+  }
+  .skin-btn.on { border-color: var(--flesh); background: var(--accent-soft); }
+  .skin-swatch { width: 26px; height: 20px; border-radius: 7px; box-shadow: 0 0 0 1px rgba(0,0,0,.06) inset; }
+  .skin-name { font-size: 9.5px; color: var(--text-dim); line-height: 1.1; white-space: nowrap; }
+  .skin-btn.on .skin-name { color: var(--flesh); font-weight: 700; }
+
+  /* 演示时间机 */
+  .demo-row { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 14px; justify-content: center; }
+  .demo-note { font-size: 11px; color: var(--text-dim); text-align: center; margin-top: 6px; }
+
+  /* ============ 首次引导遮罩 ============ */
+  .onboarding {
+    position: fixed; inset: 0; z-index: 50;
+    background: rgba(35,35,35,.45); backdrop-filter: blur(6px);
+    display: none; align-items: center; justify-content: center; padding: 20px;
+  }
+  .onboarding.show { display: flex; }
+  .ob-card {
+    width: 360px; max-width: 92vw; background: var(--cream); border-radius: 24px; padding: 26px 24px;
+    box-shadow: 0 20px 60px rgba(0,0,0,.3);
+  }
+  .ob-card h2 { font-size: 19px; margin-bottom: 4px; }
+  .ob-card .ob-sub { font-size: 12.5px; color: var(--text-dim); margin-bottom: 16px; }
+  .ob-card .field { margin-bottom: 14px; }
+  .ob-card input[type=number], .ob-card input[type=time] {
+    width: 100%; border: 1.5px solid var(--line); border-radius: 12px; padding: 10px 12px;
+    font-size: 15px; font-family: inherit; background: var(--bubble); color: var(--text);
+  }
+  /* 真挂件里引导卡贴合小窗 */
+  body.in-app .onboarding { padding: 10px; }
+  body.in-app .ob-card { width: 100%; padding: 18px 16px; border-radius: 18px; }
+  body.in-app .ob-card h2 { font-size: 17px; }
+  body.in-app .ob-card .ob-sub { font-size: 12px; margin-bottom: 12px; }
+  .ob-actions { display: flex; gap: 10px; margin-top: 18px; }
+  .ob-actions .main-btn { margin-top: 0; }
+  .ob-skip { flex: 0 0 auto; border: none; background: none; color: var(--text-dim); cursor: pointer; font-size: 13px; font-family: inherit; padding: 0 6px; }
+</style>
+</head>
+<body>
+
+<div class="stage-hint">↓ 这就是未来常驻桌面的挂件形态（340px 小窗演示）</div>
+
+<!-- ================= 挂件 ================= -->
+<div class="widget" id="widget" data-act="typing">
+
+  <div class="drag-bar" data-tauri-drag-region title="按住拖动窗口"></div>
+
+  <div class="pet-row">
+    <div class="bubble" id="bubble" data-tauri-drag-region>…</div>
+    <!-- 小狗桌宠：爱吃西瓜的奶油色小狗（坐姿/站姿/蹲坑/趴睡四形态） -->
+    <svg class="dog" viewBox="0 0 160 150" id="dogSvg" title="点我摸鱼">
+      <!-- 坐姿形态 -->
+      <g class="dog-sit">
+        <path class="tail" d="M118 104 Q 138 96 140 78" fill="none" stroke="var(--dog-ear)" stroke-width="9" stroke-linecap="round"/>
+        <g class="breath">
+          <ellipse cx="80" cy="112" rx="42" ry="32" fill="var(--dog-body)"/>
+          <ellipse cx="80" cy="120" rx="26" ry="18" fill="var(--dog-inner)"/>
+          <ellipse class="paw-l" cx="62" cy="138" rx="11" ry="7" fill="var(--dog-body)" stroke="var(--dog-line)" stroke-width="1.5"/>
+          <ellipse class="paw-r" cx="98" cy="138" rx="11" ry="7" fill="var(--dog-body)" stroke="var(--dog-line)" stroke-width="1.5"/>
+          <!-- 笔记本电脑 -->
+          <g class="prop prop-laptop">
+            <rect x="48" y="126" width="64" height="5.5" rx="2.75" fill="#C7CBD6" stroke="#AEB4C2" stroke-width="1"/>
+            <rect x="54" y="94" width="52" height="33" rx="5" fill="#E9EBF1" stroke="#C4C9D4" stroke-width="1.5"/>
+            <path d="M73 108 A7 7 0 0 0 87 108 Z" fill="var(--flesh)"/>
+            <path d="M73 108 A7 7 0 0 0 87 108" fill="none" stroke="var(--rind-dark)" stroke-width="2" stroke-linecap="round"/>
+          </g>
+          <!-- 头 -->
+          <g class="head">
+            <path class="ear-l" d="M52 40 Q 30 44 32 70 Q 46 66 54 52 Z" fill="var(--dog-ear)"/>
+            <path class="ear-r" d="M108 40 Q 130 44 128 70 Q 114 66 106 52 Z" fill="var(--dog-ear)"/>
+            <circle cx="80" cy="58" r="34" fill="var(--dog-body)"/>
+            <ellipse cx="56" cy="68" rx="6.5" ry="4" fill="var(--cheek)" opacity=".55"/>
+            <ellipse cx="104" cy="68" rx="6.5" ry="4" fill="var(--cheek)" opacity=".55"/>
+            <g class="gaze">
+              <g class="eye"><circle cx="66" cy="54" r="4.2" fill="var(--seed)"/><circle cx="67.5" cy="52.5" r="1.4" fill="#fff"/></g>
+              <g class="eye"><circle cx="94" cy="54" r="4.2" fill="var(--seed)"/><circle cx="95.5" cy="52.5" r="1.4" fill="#fff"/></g>
+            </g>
+            <ellipse cx="80" cy="68" rx="12" ry="9" fill="var(--dog-inner)"/>
+            <ellipse cx="80" cy="64" rx="5.5" ry="4" fill="var(--seed)"/>
+            <g class="jaw">
+              <path d="M80 68 Q 80 76 72 75 M80 68 Q 80 76 88 75" stroke="var(--seed)" stroke-width="2" fill="none" stroke-linecap="round"/>
+              <path class="tongue" d="M80 73 Q 76 82 80 86 Q 84 82 80 73" fill="var(--flesh-mid)"/>
+            </g>
+            <path class="sweat" d="M112 44 Q 116 50 112 54 Q 108 50 112 44" fill="#7EC8F7"/>
+            <path class="sweat s2" d="M120 56 Q 124 62 120 66 Q 116 62 120 56" fill="#7EC8F7"/>
+            <!-- 打电话：贴耳手机 -->
+            <g class="prop prop-phone">
+              <g transform="rotate(-12 110 57)">
+                <rect x="104" y="47" width="12" height="20" rx="3.5" fill="#2B2B33"/>
+                <rect x="106.5" y="50" width="7" height="12" rx="1.5" fill="#8FD0FF" opacity=".85"/>
+              </g>
+              <ellipse cx="101" cy="66" rx="7" ry="5.5" fill="var(--dog-body)" stroke="var(--dog-line)" stroke-width="1.2"/>
+            </g>
+            <text class="scold-mark" x="116" y="26" font-size="15" font-weight="900" fill="var(--flesh)">！</text>
+          </g>
+          <text class="snooze" x="114" y="38" font-size="12" fill="#9A938B" font-weight="700">Z</text>
+          <!-- 西瓜 + 抱瓜双爪 -->
+          <g class="prop prop-melon">
+            <path d="M30 116 A17 17 0 0 0 64 116 Z" fill="var(--flesh)"/>
+            <path d="M30 116 A17 17 0 0 0 64 116" fill="none" stroke="var(--rind-dark)" stroke-width="5" stroke-linecap="round"/>
+            <ellipse cx="41" cy="120" rx="1.4" ry="2.2" fill="var(--seed)"/>
+            <ellipse cx="47" cy="123.5" rx="1.4" ry="2.2" fill="var(--seed)"/>
+            <ellipse cx="54" cy="120" rx="1.4" ry="2.2" fill="var(--seed)"/>
+            <ellipse cx="31" cy="112" rx="7" ry="5.5" fill="var(--dog-body)" stroke="var(--dog-line)" stroke-width="1.2"/>
+            <ellipse cx="63" cy="112" rx="7" ry="5.5" fill="var(--dog-body)" stroke="var(--dog-line)" stroke-width="1.2"/>
+          </g>
+          <ellipse class="crumb" cx="74" cy="88" rx="1.6" ry="2.4" fill="var(--seed)"/>
+          <ellipse class="crumb c2" cx="82" cy="90" rx="1.6" ry="2.4" fill="var(--seed)"/>
+          <text class="heart" x="36" y="40" font-size="14" fill="var(--flesh)">♥</text>
+          <text class="heart h2" x="118" y="34" font-size="12" fill="var(--flesh-mid)">♥</text>
+          <text class="heart h3" x="80" y="24" font-size="10" fill="var(--flesh-light)">♥</text>
+        </g>
+      </g>
+
+      <!-- 站姿形态：做汇报 -->
+      <g class="dog-stand">
+        <path class="tail" d="M84 118 Q 100 112 102 98" fill="none" stroke="var(--dog-ear)" stroke-width="8" stroke-linecap="round"/>
+        <g>
+          <path d="M112 92 L106 146 M140 92 L146 146" stroke="#8A6B4A" stroke-width="4" stroke-linecap="round"/>
+          <rect x="100" y="48" width="54" height="44" rx="4" fill="#FFFFFF" stroke="#D8CFBF" stroke-width="2"/>
+          <path d="M106 58 L106 86 M106 86 L148 86" stroke="#C9C2B6" stroke-width="1.5"/>
+          <polyline points="108,62 116,66 124,71 132,77 141,82" fill="none" stroke="var(--flesh)" stroke-width="2.5" stroke-linecap="round"/>
+          <path d="M141 82 l5 1.5 -4.5 3.5 z" fill="var(--flesh)"/>
+        </g>
+        <rect x="52" y="128" width="9" height="16" rx="4.5" fill="var(--dog-body)" stroke="var(--dog-line)" stroke-width="1.2"/>
+        <rect x="67" y="128" width="9" height="16" rx="4.5" fill="var(--dog-body)" stroke="var(--dog-line)" stroke-width="1.2"/>
+        <ellipse cx="62" cy="102" rx="22" ry="28" fill="var(--dog-body)"/>
+        <ellipse cx="62" cy="110" rx="13" ry="16" fill="var(--dog-inner)"/>
+        <path d="M46 96 Q 38 106 42 116" stroke="var(--dog-body)" stroke-width="9" stroke-linecap="round" fill="none"/>
+        <g class="pointer-arm">
+          <path d="M82 92 Q 96 82 104 72" stroke="var(--dog-body)" stroke-width="9" stroke-linecap="round" fill="none"/>
+          <line x1="104" y1="72" x2="128" y2="66" stroke="#8A6B4A" stroke-width="3.5" stroke-linecap="round"/>
+        </g>
+        <g class="head-s">
+          <path d="M44 34 Q 24 38 26 60 Q 38 56 45 46 Z" fill="var(--dog-ear)"/>
+          <path d="M80 34 Q 100 38 98 60 Q 86 56 79 46 Z" fill="var(--dog-ear)"/>
+          <circle cx="62" cy="56" r="27" fill="var(--dog-body)"/>
+          <ellipse cx="44" cy="64" rx="5" ry="3.2" fill="var(--cheek)" opacity=".55"/>
+          <ellipse cx="80" cy="64" rx="5" ry="3.2" fill="var(--cheek)" opacity=".55"/>
+          <g class="eye"><circle cx="54" cy="52" r="3.6" fill="var(--seed)"/><circle cx="55.2" cy="50.8" r="1.2" fill="#fff"/></g>
+          <g class="eye"><circle cx="70" cy="52" r="3.6" fill="var(--seed)"/><circle cx="71.2" cy="50.8" r="1.2" fill="#fff"/></g>
+          <ellipse cx="62" cy="64" rx="10" ry="7.5" fill="var(--dog-inner)"/>
+          <ellipse cx="62" cy="60.5" rx="4.5" ry="3.2" fill="var(--seed)"/>
+          <g class="jaw">
+            <path d="M62 64 Q 62 71 55.5 70 M62 64 Q 62 71 68.5 70" stroke="var(--seed)" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+          </g>
+        </g>
+      </g>
+
+      <!-- 蹲坑形态：刷手机 -->
+      <g class="dog-toilet">
+        <circle cx="130" cy="130" r="7.5" fill="#fff" stroke="#D5DBE1" stroke-width="1.5"/>
+        <circle cx="130" cy="130" r="2.5" fill="#D5DBE1"/>
+        <rect x="126" y="130" width="8.5" height="13" rx="2" fill="#fff" stroke="#D5DBE1" stroke-width="1"/>
+        <ellipse cx="80" cy="147" rx="42" ry="4.5" fill="#000" opacity=".07"/>
+        <path d="M46 116 Q 44 140 62 146 L98 146 Q 116 140 114 116 Z" fill="#EDF1F4" stroke="#D5DBE1" stroke-width="2"/>
+        <ellipse cx="80" cy="100" rx="30" ry="27" fill="var(--dog-body)"/>
+        <ellipse cx="80" cy="116" rx="37" ry="13" fill="#F7F9FB" stroke="#D5DBE1" stroke-width="2"/>
+        <ellipse class="leg-l" cx="63" cy="130" rx="7" ry="10" fill="var(--dog-body)" stroke="var(--dog-line)" stroke-width="1.2"/>
+        <ellipse class="leg-r" cx="97" cy="130" rx="7" ry="10" fill="var(--dog-body)" stroke="var(--dog-line)" stroke-width="1.2"/>
+        <g class="head-t">
+          <path d="M56 42 Q 36 46 38 68 Q 50 64 57 54 Z" fill="var(--dog-ear)"/>
+          <path d="M104 42 Q 124 46 122 68 Q 110 64 103 54 Z" fill="var(--dog-ear)"/>
+          <circle cx="80" cy="62" r="29" fill="var(--dog-body)"/>
+          <ellipse class="glow" cx="80" cy="66" rx="24" ry="20" fill="#BFE3FF" opacity="0"/>
+          <ellipse cx="59" cy="70" rx="5.5" ry="3.5" fill="var(--cheek)" opacity=".55"/>
+          <ellipse cx="101" cy="70" rx="5.5" ry="3.5" fill="var(--cheek)" opacity=".55"/>
+          <g class="gaze-t">
+            <g class="eye"><circle cx="68" cy="58" r="4" fill="var(--seed)"/><circle cx="69.3" cy="56.6" r="1.3" fill="#fff"/></g>
+            <g class="eye"><circle cx="92" cy="58" r="4" fill="var(--seed)"/><circle cx="93.3" cy="56.6" r="1.3" fill="#fff"/></g>
+          </g>
+          <ellipse cx="80" cy="72" rx="11" ry="8" fill="var(--dog-inner)"/>
+          <ellipse cx="80" cy="67.5" rx="5" ry="3.5" fill="var(--seed)"/>
+          <path d="M74 78 Q 80 82 86 78" stroke="var(--seed)" stroke-width="2" fill="none" stroke-linecap="round"/>
+        </g>
+        <rect x="69" y="88" width="22" height="34" rx="5" fill="#2B2B33"/>
+        <rect x="72" y="92" width="16" height="24" rx="2.5" fill="#8FD0FF" opacity=".9"/>
+        <ellipse cx="66" cy="104" rx="7" ry="6" fill="var(--dog-body)" stroke="var(--dog-line)" stroke-width="1.2"/>
+        <ellipse cx="94" cy="104" rx="7" ry="6" fill="var(--dog-body)" stroke="var(--dog-line)" stroke-width="1.2"/>
+        <ellipse class="thumb" cx="89" cy="98" rx="3" ry="4.5" fill="var(--dog-body)" stroke="var(--dog-line)" stroke-width="1"/>
+      </g>
+
+      <!-- 趴睡形态 -->
+      <g class="dog-lie">
+        <g class="breath-lie">
+          <path class="tail-lie" d="M130 128 Q 148 124 150 110" fill="none" stroke="var(--dog-ear)" stroke-width="8" stroke-linecap="round"/>
+          <ellipse cx="88" cy="126" rx="52" ry="20" fill="var(--dog-body)"/>
+          <circle cx="42" cy="112" r="26" fill="var(--dog-body)"/>
+          <path d="M22 100 Q 4 106 8 126 Q 20 122 26 112 Z" fill="var(--dog-ear)"/>
+          <path d="M62 100 Q 78 106 74 126 Q 64 122 58 112 Z" fill="var(--dog-ear)"/>
+          <path d="M28 110 Q 33 114 38 110" stroke="var(--seed)" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+          <path d="M48 110 Q 53 114 58 110" stroke="var(--seed)" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+          <ellipse cx="43" cy="120" rx="5" ry="3.6" fill="var(--seed)"/>
+          <ellipse cx="26" cy="118" rx="5" ry="3.2" fill="var(--cheek)" opacity=".5"/>
+          <ellipse cx="60" cy="118" rx="5" ry="3.2" fill="var(--cheek)" opacity=".5"/>
+        </g>
+        <text class="zzz" x="78" y="96" font-size="13" fill="#9A938B" font-weight="700">Z</text>
+        <text class="zzz z2" x="88" y="86" fill="#9A938B" font-weight="700">Z</text>
+        <text class="zzz z3" x="100" y="74" fill="#9A938B" font-weight="700">Z</text>
+      </g>
+    </svg>
+  </div>
+
+  <div class="count-row" data-tauri-drag-region>
+    <div class="status-chip" id="statusChip">搬砖中</div>
+    <!-- 当天圆环时钟：圆心放倒计时，弧长=工作进度 -->
+    <div class="daily-ring" id="dailyRing">
+      <svg viewBox="0 0 120 120">
+        <circle class="ring-bg" cx="60" cy="60" r="48" stroke-width="10"/>
+        <circle class="ring-fg" id="ringFg" cx="60" cy="60" r="48" stroke-width="10"
+                stroke-dasharray="301.59 301.59" stroke-dashoffset="301.59" stroke-linecap="round"/>
+      </svg>
+      <div class="ring-center">
+        <div class="ring-time" id="ringTime">--:--:--</div>
+        <div class="ring-label" id="ringLabel">今天还剩</div>
+        <div class="ring-pct" id="ringPct">0%</div>
+      </div>
+    </div>
+    <!-- 一周进度条：7 格，已工作日=深绿，今日=渐变进度，周末=浅色 -->
+    <div class="week-bar" id="weekBar"></div>
+    <div class="week-summary" id="weekSummary"></div>
+    <!-- 距下一个休息日还有多久（墙钟时间进度） -->
+    <div class="weekend-bar" id="weekendBar">
+      <div class="w-track"><div class="w-fill" id="weekendFill"></div><div class="w-marker" id="weekendMarker"></div></div>
+      <div class="weekend-info" id="weekendInfo"></div>
+    </div>
+  </div>
+
+  <div class="money-row">
+    <div class="money-card" id="moneyMoyu">
+      <div class="t">今日摸鱼进账</div>
+      <div class="v" id="moyuMoney">+¥0.0000</div>
+    </div>
+    <div class="money-card loss hidden" id="moneyOt">
+      <div class="t" id="otTitle">今日加班白给</div>
+      <div class="v" id="otMoney">-¥0.0000</div>
+    </div>
+  </div>
+
+  <button class="main-btn" id="mainBtn">开始摸鱼</button>
+
+  <div class="tool-row">
+    <div class="todo-hint">下班前还有 <b id="todoLeft">0</b> 件事</div>
+    <div>
+      <button class="icon-btn" id="todoToggle" title="待办">☰</button>
+      <button class="icon-btn" id="gearToggle" title="设置">⚙</button>
+    </div>
+  </div>
+
+  <!-- 待办抽屉 -->
+  <div class="drawer" id="todoDrawer">
+    <h3>待办</h3>
+    <div class="todo-add">
+      <input id="todoInput" placeholder="下班前要搞定的事…" maxlength="40">
+      <button id="todoAddBtn">＋</button>
+    </div>
+    <ul class="todo-list" id="todoList"></ul>
+  </div>
+
+  <!-- 设置抽屉 -->
+  <div class="drawer" id="gearDrawer">
+    <h3>作息与收入</h3>
+    <div class="wd-row" id="wdRow"></div>
+    <div class="grid2">
+      <div class="field"><label>上班</label><input type="time" id="startTime"></div>
+      <div class="field"><label>下班</label><input type="time" id="endTime"></div>
+    </div>
+    <div class="grid2">
+      <div class="field"><label>月薪（元）</label><input type="number" id="salaryInput" min="0" step="500"></div>
+      <div class="field"><label>加班费倍率</label>
+        <div class="seg-row" id="otRateRow">
+          <button class="seg-btn" data-rate="0">没有</button>
+          <button class="seg-btn" data-rate="1.5">1.5×</button>
+          <button class="seg-btn" data-rate="2">2×</button>
+          <button class="seg-btn" data-rate="3">3×</button>
+        </div>
+      </div>
+    </div>
+    <h3>今日特殊安排 <span id="overrideNote" style="font-weight:400;color:var(--text-dim)"></span></h3>
+    <div class="ov-row">
+      <button class="chip-btn" id="ovOvertime">加班 +2h</button>
+      <button class="chip-btn" id="ovHoliday">放假</button>
+      <button class="chip-btn" id="ovLeave">请假</button>
+      <button class="chip-btn" id="ovClear">清除</button>
+    </div>
+    <h3 style="margin-top:12px">皮肤</h3>
+    <div class="skin-row" id="skinRow"></div>
+  </div>
+</div>
+
+<!-- 演示时间机（浏览器演示用，真挂件里隐藏） -->
+<div class="demo-row">
+  <button class="chip-btn" data-sim="wed-noon">周三 13:30</button>
+  <button class="chip-btn" data-sim="fri-1700">周五 17:00</button>
+  <button class="chip-btn" data-sim="sat-noon">周六 11:00</button>
+  <button class="chip-btn" data-sim="real">真实时间</button>
+</div>
+<div class="demo-note">演示模式：模拟时间照常流逝。点小狗或主按钮都能摸鱼；搬砖/摸鱼时小狗会自动轮换小动作。</div>
+
+<!-- ================= 首次引导 ================= -->
+<div class="onboarding" id="onboarding">
+  <div class="ob-card" id="obCard"></div>
+</div>
+
+<script>
+"use strict";
+// Tauri 真挂件模式：透明白底 + 隐藏演示元素
+if (window.__TAURI__) document.body.classList.add("in-app");
+
+/* ============ 状态 ============ */
+const LS_KEY = "watermelon-widget-v1";
+// 休息模式预设（周一=1 … 周日=7）
+const REST_PRESETS = {
+  double:    { label: "双休",  workdays: [2,3,4,5,6] },
+  "single-sun": { label: "单休·周日", workdays: [2,3,4,5,6,7] },
+  "single-sat": { label: "单休·周六", workdays: [1,2,3,4,5,6] },
+  custom:    { label: "自定义", workdays: null }   // workdays 由用户手动勾
+};
+const defaultState = () => ({
+  onboarded: false,
+  restMode: "double",   // 休息模式预设
+  schedule: { workdays: [2,3,4,5,6], startH: 9, startM: 0, endH: 18, endM: 0 },
+  salary: 0,          // 月薪，0 = 未录入
+  otRate: 0,          // 加班费倍率，0 = 没有加班费
+  overrides: {},      // dayKey -> { type, minutes? }
+  todos: [],
+  moyuSessions: [],
+  skin: "watermelon"  // 当前皮肤 id
+});
+function load() {
+  try { return Object.assign(defaultState(), JSON.parse(localStorage.getItem(LS_KEY)) || {}); }
+  catch { return defaultState(); }
+}
+let S = load();
+const save = () => localStorage.setItem(LS_KEY, JSON.stringify(S));
+const DAY_MS = 86400000;   // 提前声明，initHolidays 要用到
+
+/* ============ 节假日接口（api.jiejiariapi.com） ============
+ * 浏览器端 fetch 被 CORS 挡掉，所以内嵌国务院节假日通知的离线 JSON，
+ * 同时后台偷偷尝试 fetch（未来接 Tauri sidecar / 其他 CORS 友好源可以覆盖缓存）。
+ *
+ * 用法：resolveDay 里优先查 getHolidayInfo(day)
+ *   - 命中 && isOffDay=true  → 法定放假（reason="holiday"，holidayName="春节"）
+ *   - 命中 && isOffDay=false → 调休补班（reason 留空，强制 work=true）
+ *   - 没命中                  → 回退 S.schedule.workdays
+ */
+const HOLIDAY_API = "https://api.jiejiariapi.com/v1";
+const HOLIDAY_CACHE_PREFIX = "watermelon-widget-hol-";
+let HOLIDAY_MAP = {};   // 合并后的 { "YYYY-MM-DD": { name, isOffDay, source } }
+
+// 内嵌国务院节假日通知数据（节假日里标注过的日期，含调休补班）
+// 来源：api.jiejiariapi.com/v1/holidays/{year}（国务院办公厅每年 11 月发布次年节假日）
+const OFFLINE_HOLIDAYS = {
+  2025: {
+    "2025-01-01": { name: "元旦", isOffDay: true },
+    "2025-01-26": { name: "春节", isOffDay: false },
+    "2025-01-28": { name: "春节", isOffDay: true },
+    "2025-01-29": { name: "春节", isOffDay: true },
+    "2025-01-30": { name: "春节", isOffDay: true },
+    "2025-01-31": { name: "春节", isOffDay: true },
+    "2025-02-01": { name: "春节", isOffDay: true },
+    "2025-02-02": { name: "春节", isOffDay: true },
+    "2025-02-03": { name: "春节", isOffDay: true },
+    "2025-02-04": { name: "春节", isOffDay: true },
+    "2025-02-08": { name: "春节", isOffDay: false },
+    "2025-04-04": { name: "清明节", isOffDay: true },
+    "2025-04-05": { name: "清明节", isOffDay: true },
+    "2025-04-06": { name: "清明节", isOffDay: true },
+    "2025-04-27": { name: "劳动节", isOffDay: false },
+    "2025-05-01": { name: "劳动节", isOffDay: true },
+    "2025-05-02": { name: "劳动节", isOffDay: true },
+    "2025-05-03": { name: "劳动节", isOffDay: true },
+    "2025-05-04": { name: "劳动节", isOffDay: true },
+    "2025-05-05": { name: "劳动节", isOffDay: true },
+    "2025-05-31": { name: "端午节", isOffDay: true },
+    "2025-06-01": { name: "端午节", isOffDay: true },
+    "2025-06-02": { name: "端午节", isOffDay: true },
+    "2025-09-28": { name: "国庆节,中秋节", isOffDay: false },
+    "2025-10-01": { name: "国庆节,中秋节", isOffDay: true },
+    "2025-10-02": { name: "国庆节,中秋节", isOffDay: true },
+    "2025-10-03": { name: "国庆节,中秋节", isOffDay: true },
+    "2025-10-04": { name: "国庆节,中秋节", isOffDay: true },
+    "2025-10-05": { name: "国庆节,中秋节", isOffDay: true },
+    "2025-10-06": { name: "国庆节,中秋节", isOffDay: true },
+    "2025-10-07": { name: "国庆节,中秋节", isOffDay: true },
+    "2025-10-08": { name: "国庆节,中秋节", isOffDay: true },
+    "2025-10-11": { name: "国庆节,中秋节", isOffDay: false },
+  },
+  2026: {
+    "2026-01-01": { name: "元旦", isOffDay: true },
+    "2026-01-02": { name: "元旦", isOffDay: true },
+    "2026-01-03": { name: "元旦", isOffDay: true },
+    "2026-01-04": { name: "元旦", isOffDay: false },
+    "2026-02-10": { name: "北小年", isOffDay: false },
+    "2026-02-11": { name: "南小年", isOffDay: false },
+    "2026-02-14": { name: "春节", isOffDay: false },
+    "2026-02-15": { name: "春节", isOffDay: true },
+    "2026-02-16": { name: "除夕", isOffDay: true },
+    "2026-02-17": { name: "春节", isOffDay: true },
+    "2026-02-18": { name: "春节", isOffDay: true },
+    "2026-02-19": { name: "春节", isOffDay: true },
+    "2026-02-20": { name: "春节", isOffDay: true },
+    "2026-02-21": { name: "春节", isOffDay: true },
+    "2026-02-22": { name: "春节", isOffDay: true },
+    "2026-02-23": { name: "春节", isOffDay: true },
+    "2026-02-28": { name: "春节", isOffDay: false },
+    "2026-04-04": { name: "清明节", isOffDay: true },
+    "2026-04-05": { name: "清明节", isOffDay: true },
+    "2026-04-06": { name: "清明节", isOffDay: true },
+    "2026-05-01": { name: "劳动节", isOffDay: true },
+    "2026-05-02": { name: "劳动节", isOffDay: true },
+    "2026-05-03": { name: "劳动节", isOffDay: true },
+    "2026-05-04": { name: "劳动节", isOffDay: true },
+    "2026-05-05": { name: "劳动节", isOffDay: true },
+    "2026-05-09": { name: "劳动节", isOffDay: false },
+    "2026-06-19": { name: "端午节", isOffDay: true },
+    "2026-06-20": { name: "端午节", isOffDay: true },
+    "2026-06-21": { name: "端午节", isOffDay: true },
+    "2026-09-20": { name: "国庆节", isOffDay: false },
+    "2026-09-25": { name: "中秋节", isOffDay: true },
+    "2026-09-26": { name: "中秋节", isOffDay: true },
+    "2026-09-27": { name: "中秋节", isOffDay: true },
+    "2026-10-01": { name: "国庆节", isOffDay: true },
+    "2026-10-02": { name: "国庆节", isOffDay: true },
+    "2026-10-03": { name: "国庆节", isOffDay: true },
+    "2026-10-04": { name: "国庆节", isOffDay: true },
+    "2026-10-05": { name: "国庆节", isOffDay: true },
+    "2026-10-06": { name: "国庆节", isOffDay: true },
+    "2026-10-07": { name: "国庆节", isOffDay: true },
+    "2026-10-10": { name: "国庆节", isOffDay: false },
+  },
+};
+
+function getHolidayInfo(day) {
+  return HOLIDAY_MAP[dayKey(day)] || null;
+}
+
+// 初始化：先从 localStorage / 内嵌数据拿一份，保证立刻可用
+(function initHolidaysSync() {
+  const y = new Date().getFullYear();
+  const map = {};
+  [y - 1, y, y + 1].forEach(yr => {
+    const raw = localStorage.getItem(HOLIDAY_CACHE_PREFIX + yr);
+    if (raw) {
+      try {
+        const parsed = JSON.parse(raw);
+        Object.entries(parsed.data || {}).forEach(([k, v]) => { map[k] = { ...v, source: "holiday" }; });
+        return;
+      } catch {}
+    }
+    const offline = OFFLINE_HOLIDAYS[yr];
+    if (offline) {
+      Object.entries(offline).forEach(([k, v]) => { map[k] = { ...v, source: "holiday" }; });
+    }
+  });
+  HOLIDAY_MAP = map;
+})();
+
+// 后台偷偷尝试 fetch（成功的话覆盖缓存，跨年自动拉新年份）
+async function refreshHolidayYear(year) {
+  try {
+    const res = await fetch(`${HOLIDAY_API}/holidays/${year}`, { cache: "no-store" });
+    if (!res.ok) return null;
+    const json = await res.json();
+    const flat = {};
+    for (const [k, v] of Object.entries(json || {})) {
+      flat[k] = { name: v.name, isOffDay: v.isOffDay, source: "holiday" };
+    }
+    localStorage.setItem(HOLIDAY_CACHE_PREFIX + year, JSON.stringify({ fetchedAt: Date.now(), data: flat }));
+    return flat;
+  } catch {
+    // CORS 或离线 → 安静失败
+    return null;
+  }
+}
+(async function refreshLoop() {
+  const y = new Date().getFullYear();
+  const results = await Promise.all([refreshHolidayYear(y), refreshHolidayYear(y + 1)]);
+  const map = { ...HOLIDAY_MAP };
+  for (const r of results) if (r) Object.assign(map, r);
+  HOLIDAY_MAP = map;
+  if (typeof render === "function") render();
+})();
+
+
+/* ============ 皮肤系统 ============ */
+// 皮肤 = 一组 CSS 变量覆盖。新增皮肤只要在 SKINS 里加一项，不用改别处。
+const SKIN_KEYS = [
+  "flesh", "flesh-light", "flesh-mid", "rind-dark", "rind-light", "seed", "cream",
+  "panel-rgb", "bubble", "accent-soft", "line", "green-soft", "card-bg", "card-border",
+  "btn-soft", "dog-body", "dog-ear", "dog-inner", "dog-line", "cheek", "text", "text-dim"
+];
+// 启动时记下 :root 的默认值，切皮肤时先全部还原再覆盖
+const BASE_VARS = {};
+SKIN_KEYS.forEach(k => {
+  BASE_VARS[k] = getComputedStyle(document.documentElement).getPropertyValue("--" + k).trim();
+});
+
+const SKINS = [
+  { id: "watermelon", name: "西瓜红", vars: {} },
+  { id: "matcha", name: "抹茶", vars: {
+      "flesh": "#5FB86A", "flesh-light": "#D6EFD9", "flesh-mid": "#8ED09A",
+      "rind-dark": "#2E7D52", "rind-light": "#9ADFAE", "seed": "#25372B",
+      "cream": "#FAFFFA", "panel-rgb": "250, 255, 250",
+      "accent-soft": "#EDF7EE", "line": "#E3EDE4", "green-soft": "#E7F5EA",
+      "card-bg": "#F1FAF2", "card-border": "#D5EBD8", "btn-soft": "#EEF6EE",
+      "dog-ear": "#A8823F", "dog-line": "#E7D6B6", "cheek": "#C9E3A6",
+      "text": "#23302A", "text-dim": "#8B9A90"
+  }},
+  { id: "grape", name: "葡萄", vars: {
+      "flesh": "#8B7BE0", "flesh-light": "#E6E1FF", "flesh-mid": "#B4A6F0",
+      "rind-dark": "#5B49B8", "rind-light": "#B9AEF5", "seed": "#231F3C",
+      "cream": "#FCFAFF", "panel-rgb": "253, 251, 255",
+      "accent-soft": "#F2EEFF", "line": "#E8E2F5", "green-soft": "#EFEBFA",
+      "card-bg": "#F5F2FF", "card-border": "#DED7F5", "btn-soft": "#F1EDFA",
+      "dog-ear": "#A8825A", "dog-line": "#E7D6B6", "cheek": "#D3B8E0",
+      "text": "#2A2440", "text-dim": "#928CA6"
+  }},
+  { id: "ocean", name: "海盐", vars: {
+      "flesh": "#48A6DE", "flesh-light": "#D6EEFB", "flesh-mid": "#87C9F0",
+      "rind-dark": "#2578AE", "rind-light": "#9FD8F5", "seed": "#1B2C3A",
+      "cream": "#F8FCFF", "panel-rgb": "249, 253, 255",
+      "accent-soft": "#EAF5FD", "line": "#E0ECF5", "green-soft": "#E8F4FC",
+      "card-bg": "#F0F8FF", "card-border": "#D3E8F8", "btn-soft": "#EDF5FA",
+      "cheek": "#FFC2CE", "dog-line": "#E7D6B6",
+      "text": "#1F2C38", "text-dim": "#8B9AA6"
+  }},
+  { id: "caramel", name: "奶茶", vars: {
+      "flesh": "#CE8A50", "flesh-light": "#F6E2CD", "flesh-mid": "#E5AE7C",
+      "rind-dark": "#8A5A2B", "rind-light": "#DDB37E", "seed": "#33241A",
+      "cream": "#FFFBF5", "panel-rgb": "255, 251, 245",
+      "accent-soft": "#FBF0E3", "line": "#EDE0D0", "green-soft": "#F7EFE2",
+      "card-bg": "#FDF6EC", "card-border": "#EBDCC7", "btn-soft": "#F3EBE0",
+      "dog-body": "#F5E1BE", "dog-ear": "#B07A45", "dog-inner": "#FCEED2",
+      "dog-line": "#E8D5AE", "cheek": "#E8B79C",
+      "text": "#3A2A1C", "text-dim": "#A2927F"
+  }},
+  { id: "sakura", name: "樱花", vars: {
+      "flesh": "#EF6A9B", "flesh-light": "#FFDCE7", "flesh-mid": "#F79DBD",
+      "rind-dark": "#BE4A78", "rind-light": "#F7B7CC", "seed": "#3B2130",
+      "cream": "#FFFAFC", "panel-rgb": "255, 250, 252",
+      "accent-soft": "#FFEFF4", "line": "#F5E3E8", "green-soft": "#FBEDF2",
+      "card-bg": "#FFF3F7", "card-border": "#F8D9E4", "btn-soft": "#FBEDF1",
+      "cheek": "#FFB0C4", "dog-line": "#E7D6B6",
+      "text": "#3A2530", "text-dim": "#A68E99"
+  }},
+  { id: "night", name: "暗夜", vars: {
+      "flesh": "#FF7A90", "flesh-light": "#5A3B45", "flesh-mid": "#C7677C",
+      "rind-dark": "#2F9C6B", "rind-light": "#3E6B55", "seed": "#14161C",
+      "cream": "#2C2C36", "panel-rgb": "38, 38, 46", "bubble": "#32323E",
+      "accent-soft": "#3E3038", "line": "#45444F", "green-soft": "#2C3A33",
+      "card-bg": "#2E3833", "card-border": "#3C4A42", "btn-soft": "#37373F",
+      "dog-body": "#E8D7B8", "dog-ear": "#9C7440", "dog-inner": "#4A4034",
+      "dog-line": "#C9B695", "cheek": "#C97F8D",
+      "text": "#F2EDE6", "text-dim": "#9C96A2"
+  }}
+];
+
+function applySkin(id) {
+  const skin = SKINS.find(s => s.id === id) || SKINS[0];
+  const root = document.documentElement.style;
+  SKIN_KEYS.forEach(k => {
+    root.removeProperty("--" + k);
+    if (skin.vars[k]) root.setProperty("--" + k, skin.vars[k]);
+  });
+  S.skin = skin.id; save();
+  syncSkinUI();
+}
+
+function syncSkinUI() {
+  const row = $("skinRow");
+  if (!row) return;
+  row.innerHTML = "";
+  SKINS.forEach(sk => {
+    const b = document.createElement("button");
+    b.className = "skin-btn" + (S.skin === sk.id ? " on" : "");
+    b.title = sk.name;
+    const sw = document.createElement("span");
+    sw.className = "skin-swatch";
+    sw.style.background = `linear-gradient(135deg, ${sk.vars.flesh || BASE_VARS.flesh} 0 50%, ${sk.vars["rind-dark"] || BASE_VARS["rind-dark"]} 50% 100%)`;
+    const nm = document.createElement("span");
+    nm.className = "skin-name"; nm.textContent = sk.name;
+    b.append(sw, nm);
+    b.onclick = () => applySkin(sk.id);
+    row.appendChild(b);
+  });
+}
+
+/* ============ 窗口高度自适应 ============ */
+// 内容长高了就让真窗口跟着长高，不用滚动条
+let fitTimer = 0;
+let lastFitH = 0;
+function autoFit() {
+  if (!window.__TAURI__ || !window.__TAURI__.core) return;
+  clearTimeout(fitTimer);
+  fitTimer = setTimeout(() => {
+    let need = Math.ceil($("widget").getBoundingClientRect().height + 14);
+    const ob = $("onboarding");
+    if (ob && ob.classList.contains("show")) {
+      need = Math.max(need, Math.ceil($("obCard").getBoundingClientRect().height + 44));
+    }
+    const max = Math.max(240, (window.screen.availHeight || 900) - 60);
+    const h = Math.round(Math.min(Math.max(need, 200), max));
+    // 高度没变化就不折腾窗口（±4px 容差，避免抖动）
+    if (Math.abs(h - lastFitH) < 4) return;
+    lastFitH = h;
+    window.__TAURI__.core.invoke("set_widget_height", { height: h }).catch(() => {});
+  }, 30);
+}
+
+/* ============ 演示时钟 ============ */
+let sim = null;
+const now = () => sim ? new Date(sim.base + (Date.now() - sim.setAt)) : new Date();
+const startOfDay = d => { const x = new Date(d); x.setHours(0,0,0,0); return x; };
+const dayKey = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+const fmtHM = d => `${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;
+function fmtHMSms(ms) {
+  const t = Math.max(0, ms);
+  const p = n => String(n).padStart(2, "0");
+  return `${p(Math.floor(t/3600000))}:${p(Math.floor(t/60000)%60)}:${p(Math.floor(t/1000)%60)}`;
+}
+
+/* ============ 引擎（同 Swift 核心逻辑） ============ */
+function resolveDay(day) {
+  const ov = S.overrides[dayKey(day)];
+  // 用户手动 override 优先（最高优先级）
+  if (ov && (ov.type === "holiday" || ov.type === "leave")) return { work: false, reason: ov.type };
+  if (ov && ov.type === "overtime") { /* 先继续往下算时间，后面统一处理 */ }
+
+  // 节假日 API 数据（比 workdays.includes 优先级高）
+  const h = getHolidayInfo(day);
+  if (h) {
+    if (h.isOffDay) {
+      // 法定休 / 传统节日（哪怕本来是工作日）
+      return { work: false, reason: "holiday", holidayName: h.name };
+    }
+    // isOffDay=false 且命中 holidays → 调休补班（哪怕那天是周六/周日也要上班）
+  } else if (!S.schedule.workdays.includes(day.getDay() + 1)) {
+    // 没命中 API 标注 → 走本地 workdays 判定
+    return { work: false, reason: "weekend" };
+  }
+
+  // 到这里：要么本地 workday，要么 API 告诉我们是补班
+  const start = new Date(startOfDay(day)); start.setHours(S.schedule.startH, S.schedule.startM, 0, 0);
+  let end = new Date(startOfDay(day)); end.setHours(S.schedule.endH, S.schedule.endM, 0, 0);
+  const normalEnd = new Date(end);
+  if (ov && ov.type === "overtime") end = new Date(end.getTime() + ov.minutes * 60000);
+  const limit = new Date(startOfDay(day).getTime() + DAY_MS - 1000);
+  if (end > limit) end = limit;
+  if (end <= start) return { work: false, reason: "weekend" };
+  return { work: true, start, end, normalEnd, overtimeMin: ov && ov.type === "overtime" ? ov.minutes : 0, holidayName: h?.source === "holiday" ? h.name : undefined };
+}
+function statusAt(t) {
+  const r = resolveDay(t);
+  if (!r.work) return { type: "rest", reason: r.reason, holidayName: r.holidayName };
+  if (t < r.start) return { type: "beforeWork", start: r.start, end: r.end };
+  if (t < r.end) return { type: "working", ...r, remaining: r.end - t, progress: (t - r.start) / (r.end - r.start) };
+  return { type: "offWork", day: r };
+}
+function weekendCountdown(t) {
+  const mon0 = (t.getDay() + 6) % 7;
+  for (let w = 0; w < 4; w++) {
+    const ws = new Date(startOfDay(t).getTime() + (w * 7 - mon0) * DAY_MS);
+    let lastEnd = null;
+    for (let i = 0; i < 7; i++) {
+      const r = resolveDay(new Date(ws.getTime() + i * DAY_MS));
+      if (r.work) lastEnd = r.end;
+    }
+    if (lastEnd && lastEnd > t) return lastEnd - t;
+  }
+  return null;
+}
+
+// 找下一个休息日的 00:00 —— 以当前 workdays 为准，先看本周，不够看下周
+function nextRestDayStart(t) {
+  const mon0 = (t.getDay() + 6) % 7;
+  for (let w = 0; w < 3; w++) {
+    const ws = new Date(startOfDay(t).getTime() + (w * 7 - mon0) * DAY_MS);
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(ws.getTime() + i * DAY_MS);
+      if (!resolveDay(d).work) {
+        // 休息日在今天或之后才返回
+        if (d.getTime() >= startOfDay(t).getTime()) return d;
+      }
+    }
+  }
+  return null;
+}
+
+// 上一个休息日的 24:00（= 上一个休息日 00:00 + DAY_MS）—— 用来算已休了多少
+function prevRestDayEnd(t) {
+  const mon0 = (t.getDay() + 6) % 7;
+  for (let w = 0; w < 3; w++) {
+    const ws = new Date(startOfDay(t).getTime() - ((w + 1) * 7 + mon0) * DAY_MS);
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(ws.getTime() + i * DAY_MS);
+      if (!resolveDay(d).work) return new Date(d.getTime() + DAY_MS);
+    }
+  }
+  return null;
+}
+
+// 周末进度条渲染：从周一 00:00 → 下个休息日 00:00 的墙钟进度
+function renderWeekendBar(t) {
+  const restStart = nextRestDayStart(t);
+  const bar = $("weekendBar"), fill = $("weekendFill"), marker = $("weekendMarker"), info = $("weekendInfo");
+  if (!restStart) { bar.style.display = "none"; return; }
+  bar.style.display = "";
+
+  // 今天本身就在休息日 → 进度 100%，显示"尽情休息"
+  const todayRest = !resolveDay(t).work;
+  if (todayRest) {
+    fill.style.width = "100%";
+    marker.style.left = "100%";
+    info.innerHTML = `<b>休</b> — 尽情摸瓜`;
+    return;
+  }
+
+  // 起点选最近一个休息日结束时刻（跨周一也成立），避免"周一早上进度从 0% 开始"的体感问题
+  // 但更直观的是"本周一 00:00 → 下个休息日 00:00"，让进度条在周一早上从 0 慢慢爬
+  const mon0 = (t.getDay() + 6) % 7;
+  const weekStart = new Date(startOfDay(t).getTime() - mon0 * DAY_MS);
+
+  const span = restStart.getTime() - weekStart.getTime();
+  const progress = Math.max(0, Math.min(1, (t.getTime() - weekStart.getTime()) / span));
+  fill.style.width = (progress * 100) + "%";
+  marker.style.left = (progress * 100) + "%";
+
+  // 文案：距下个休息日还有 Hh Mm · 本周已过 N%
+  const remainMs = restStart.getTime() - t.getTime();
+  const rh = Math.floor(remainMs / 3600000);
+  const rm = Math.floor(remainMs % 3600000 / 60000);
+  // 已工作天数（从本周一开始扫 workdays 且 startOfDay(d) ≤ startOfDay(t) 的数量）
+  let doneDays = 0;
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(weekStart.getTime() + i * DAY_MS);
+    const r = resolveDay(d);
+    if (r.work && startOfDay(d).getTime() <= startOfDay(t).getTime()) doneDays++;
+  }
+  info.innerHTML = `距休息 <b>${rh}h${rm}</b> · 本周已过 ${Math.round(progress*100)}%（上班 ${doneDays} 天）`;
+}
+// 一周进度：从本周一开始扫 7 天
+function weekProgress(t) {
+  const mon0 = (t.getDay() + 6) % 7;
+  const ws = new Date(startOfDay(t).getTime() - mon0 * DAY_MS);
+  const days = [];     // 7 天逐日状态
+  let totalWorkMs = 0, doneWorkMs = 0, totalWorkdays = 0, doneWorkdays = 0;
+  let todayProgress = 0;
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(ws.getTime() + i * DAY_MS);
+    const r = resolveDay(d);
+    if (!r.work) { days.push({ rest: true, date: d }); continue; }
+    totalWorkdays++;
+    const dayMs = r.end - r.start;
+    totalWorkMs += dayMs;
+    let frac = 0;
+    if (d.getFullYear() === t.getFullYear() && d.getMonth() === t.getMonth() && d.getDate() === t.getDate()) {
+      // 今天
+      frac = Math.max(0, Math.min(1, (t - r.start) / dayMs));
+      todayProgress = frac;
+      days.push({ done: frac >= 1, today: true, frac, date: d, overtimeMin: r.overtimeMin });
+    } else if (d < startOfDay(t)) {
+      doneWorkdays++; doneWorkMs += dayMs;
+      days.push({ done: true, frac: 1, date: d, overtimeMin: r.overtimeMin });
+    } else {
+      days.push({ done: false, today: false, frac: 0, date: d, overtimeMin: r.overtimeMin });
+    }
+  }
+  return { days, totalWorkdays, doneWorkdays, todayProgress };
+}
+function renderWeekBar(t) {
+  const w = weekProgress(t);
+  const bar = $("weekBar"); bar.innerHTML = "";
+  const labels = document.createElement("div");
+  labels.className = "week-labels";
+  const track = document.createElement("div");
+  track.className = "week-track";
+  const CN = ["一","二","三","四","五","六","日"];
+  const mon0 = (t.getDay() + 6) % 7;
+  w.days.forEach((d, i) => {
+    // label
+    const lbl = document.createElement("div");
+    lbl.textContent = CN[i];
+    if (i === mon0) lbl.className = "today";
+    labels.appendChild(lbl);
+    // seg
+    const seg = document.createElement("div");
+    seg.className = "seg";
+    if (d.rest) seg.classList.add("rest");
+    else if (d.done) seg.classList.add("done", "work");
+    else if (d.today) { seg.classList.add("today", "work"); }
+    else seg.classList.add("work");
+    if (d.overtimeMin) seg.classList.add("ot");
+    track.appendChild(seg);
+  });
+  bar.append(labels, track);
+  // summary
+  const total = w.totalWorkdays;
+  const doneCount = w.doneWorkdays + (w.days.find(x => x.today && x.frac > 0) ? 1 : 0);
+  const r = resolveDay(t);
+  if (r.work && r.end > t) {
+    const remH = Math.floor((r.end - t) / 3600000);
+    const remM = Math.floor((r.end - t) % 3600000 / 60000);
+    $("weekSummary").innerHTML = `本周 ${doneCount}/${total} 工作日 · 今日还剩 <b>${remH}h${remM}m</b>`;
+  } else if (r.work) {
+    $("weekSummary").innerHTML = `本周 ${doneCount}/${total} 工作日 · 今日已圆满`;
+  } else {
+    $("weekSummary").innerHTML = `本周 ${doneCount}/${total} 工作日`;
+  }
+  // 距休息进度条（基于当前 workdays / overrides 自动算）
+  renderWeekendBar(t);
+}
+function moyuMs(t) {
+  const ds = startOfDay(t).getTime(), de = ds + DAY_MS;
+  let total = 0, active = false;
+  for (const s of S.moyuSessions) {
+    const end = s.end == null ? t.getTime() : s.end;
+    const a = Math.max(s.start, ds), b = Math.min(end, de);
+    if (b > a) total += b - a;
+    if (s.end == null) active = true;
+  }
+  return { ms: total, active };
+}
+
+/* ============ 钱 ============ */
+// 时薪 = 月薪 / 21.75 计薪日 / 每日工时
+function perSecondWage() {
+  const hours = (S.schedule.endH * 60 + S.schedule.endM - S.schedule.startH * 60 - S.schedule.startM) / 60;
+  if (!S.salary || hours <= 0) return 0;
+  return S.salary / 21.75 / hours / 3600;
+}
+const fmtMoney = v => "¥" + v.toFixed(4);
+
+/* ============ 幽默文案 ============ */
+const LINES = {
+  working: ["砖烫手也得搬，瓜熟了才算完", "认真搬砖，西瓜会有的", "当前状态：假装很忙", "老板画的饼还在锅里", "每一秒都是钱，别浪费"],
+  moyu: ["带薪摸鱼，血赚不亏", "这班是越上越有性价比", "放心摸，狗帮你盯着老板", "摸鱼不是摆烂，是行为艺术", "工资照发，快乐加倍"],
+  offWork: ["下班不积极，思想有问题", "今日份的班就上到这了", "溜了溜了，瓜都等急了", "打卡走人，头也不回"],
+  rest: ["今天不上班，瓜随便吃", "周末的空气都是甜的", "休息是为了更好地摸鱼"],
+  beforeWork: ["还没上班，再赖五分钟", "早八人，打工魂", "新的一天，新的砖"],
+  overtime: ["人在工位，魂在床位", "这班加得，狗都困了", "加班费结一下？（灵魂拷问）"],
+};
+
+/* ============ 桌宠动作调度 ============ */
+const ACT_LINES = {
+  typing: ["噼里啪啦一顿敲，其实在斗图", "键盘冒火星，产出为零", "这个需求很简单.jpg"],
+  present: ["我简单讲两句（第 40 分钟）", "大家看这条曲线……它不乐观", "PPT 第 87 页，坚持住"],
+  scolded: ["是是是，马上改（第 8 版）", "好的收到，问题都怪我", "耳朵已关闭，灵魂已下班"],
+  dozing: ["我没睡，我在闭目思考", "眼皮：我先下班了", "zzz…啊！老板我在听！"],
+  phone: ["喂您好，方案已发您邮箱（没发）", "好好好，都可以谈", "客户说要五彩斑斓的黑"],
+  melon: ["吧唧吧唧…这瓜真甜", "摸鱼赚的钱，才是赚的钱", "帮我盯着点老板，汪"],
+  toilet: ["厕所，打工人最后的净土", "带薪蹲坑，赚到", "刷完这条视频就回去…真的"],
+};
+const PET_ACTS = {
+  working: ["typing", "present", "scolded", "dozing", "phone"],
+  moyu: ["melon", "toilet"],
+  overtime: ["overtime"],
+  happy: ["happy"],
+  rest: ["sleep"],
+  beforeWork: ["dozing"],
+};
+let petMood = "", petAct = "", petTimer = 0;
+const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+function petLine() {
+  if (petMood === "beforeWork") return pick(LINES.beforeWork);
+  if (petMood === "rest") return pick(LINES.rest);
+  if (petMood === "happy") return pick(LINES.offWork);
+  if (petMood === "overtime") return pick(LINES.overtime);
+  return pick(ACT_LINES[petAct] || LINES.working);
+}
+function rotateAct() {
+  clearTimeout(petTimer);
+  const list = PET_ACTS[petMood] || PET_ACTS.working;
+  let next = pick(list), guard = 0;
+  while (list.length > 1 && next === petAct && guard++ < 10) next = pick(list);
+  petAct = next;
+  $("widget").dataset.act = next;
+  setBubble(petLine());
+  petTimer = setTimeout(rotateAct, list.length > 1 ? 6500 + Math.random() * 3000 : 8000);
+}
+function petSetMood(mood) {
+  if (mood === petMood) return;
+  petMood = mood;
+  rotateAct();
+}
+
+/* ============ 渲染 ============ */
+const $ = id => document.getElementById(id);
+function setBubble(text) {
+  const b = $("bubble");
+  b.classList.add("fade");
+  setTimeout(() => { b.textContent = text; b.classList.remove("fade"); }, 250);
+}
+
+function render() {
+  const t = now();
+  const st = statusAt(t);
+  const my = moyuMs(t);
+  const wage = perSecondWage();
+
+  // 圆环几何：dasharray = "圆周 圆周"（dash + gap），offset 才能控制可见弧长
+  const CIRC = 2 * Math.PI * 48;
+  const ringFg = $("ringFg");
+  const ringTime = $("ringTime");
+  const ringLabel = $("ringLabel");
+  const ringPct = $("ringPct");
+
+  // 状态与桌宠心情（保留原逻辑）
+  let mood = "working", chip = ["搬砖中", ""], ringCls = "";
+  let progress = 0, arcLabel = "", centerBig = "", centerLabel = "", centerMs = false;
+
+  if (st.type === "working") {
+    progress = st.progress;
+    // 调休补班：本地 workday 里没这天，但 API 标注了
+    const isMakeup = !S.schedule.workdays.includes(t.getDay() + 1);
+    const makeupTag = isMakeup && (() => { const h = getHolidayInfo(t); return h && !h.isOffDay ? `（调休补班 · ${h.name}）` : ""; })();
+    centerBig = fmtHMSms(st.remaining);
+    arcLabel = `今天 ${fmtHM(st.start)}–${fmtHM(st.end)}${st.overtimeMin ? "·加班" : ""}`;
+    mood = my.active ? "moyu" : (st.overtimeMin ? "overtime" : "working");
+    chip = my.active ? ["摸鱼中", ""] : (st.overtimeMin ? ["加班中", ""] : ["搬砖中" + makeupTag, ""]);
+    ringCls = my.active ? "moyu" : (st.overtimeMin ? "" : "");
+    if (my.active) {
+      centerBig = fmtHMSms(my.ms);
+      centerLabel = "带薪摸鱼时长";
+      centerMs = true;
+      ringCls = "moyu";
+    } else {
+      centerLabel = makeupTag ? "补班日 · 距离下班" : "距离下班";
+    }
+  } else if (st.type === "beforeWork") {
+    progress = 0;
+    centerBig = fmtHMSms(st.start - t);
+    centerLabel = "距离上班";
+    chip = ["还没上班", "green"];
+    mood = "beforeWork";
+    ringCls = "green";
+  } else if (st.type === "offWork") {
+    progress = 1;
+    centerBig = "已下班";
+    centerLabel = "今天圆满啦";
+    chip = ["已下班", "green"];
+    mood = "happy";
+    ringCls = "green";
+  } else {
+    progress = 0;
+    const hol = st.holidayName;
+    if (st.reason === "holiday" && hol) {
+      centerBig = hol;
+      centerLabel = "法定假日 · 尽情瓜";
+      chip = [hol + "放假", "green"];
+    } else {
+      centerBig = { weekend: "周末愉快", holiday: "今天放假", leave: "今天请假" }[st.reason];
+      centerLabel = "瓜都是甜的";
+      chip = [{ weekend: "周末愉快", holiday: "今天放假", leave: "今天请假" }[st.reason], "green"];
+    }
+    mood = "rest";
+    ringCls = "green";
+  }
+
+  // 圆环渲染：dasharray 需要 "C C"（dash+gap 两段），offset 从 C 递减到 0 来显示弧
+  // SVG 元素 className 是 SVGAnimatedString，不能直接赋值，用 setAttribute 或 classList
+  ringFg.setAttribute("class", "ring-fg " + ringCls);
+  ringFg.style.strokeDasharray = `${CIRC} ${CIRC}`;
+  ringFg.style.strokeDashoffset = CIRC * (1 - Math.max(0, Math.min(1, progress)));
+  ringTime.innerHTML = centerBig + (centerMs ? `<span class="ms">.${String(my.ms % 1000).padStart(3,"0")}</span>` : "");
+  ringLabel.textContent = centerLabel;
+  ringPct.textContent = Math.round(progress * 100) + "%";
+
+  // 桌宠 + status chip
+  petSetMood(mood);
+  $("statusChip").textContent = chip[0];
+  $("statusChip").className = "status-chip " + chip[1];
+
+  // 一周进度条
+  renderWeekBar(t);
+
+  // 摸鱼进账
+  if (wage > 0 && my.ms > 0) {
+    $("moneyMoyu").classList.remove("hidden");
+    $("moyuMoney").textContent = "+" + fmtMoney(my.ms / 1000 * wage);
+  } else if (wage <= 0) {
+    $("moneyMoyu").classList.remove("hidden");
+    $("moyuMoney").textContent = "录月薪后开算";
+  } else {
+    $("moyuMoney").textContent = "+" + fmtMoney(0);
+  }
+
+  // 加班亏/赚
+  const todayR = resolveDay(t);
+  if (todayR.work && todayR.overtimeMin > 0 && wage > 0) {
+    $("moneyOt").classList.remove("hidden");
+    const secs = todayR.overtimeMin * 60;
+    if (S.otRate > 0) {
+      $("otTitle").textContent = "加班费回血";
+      $("moneyOt").classList.remove("loss");
+      $("otMoney").textContent = "+" + fmtMoney(secs * wage * S.otRate);
+    } else {
+      $("otTitle").textContent = "今日加班白给";
+      $("moneyOt").classList.add("loss");
+      $("otMoney").textContent = "-" + fmtMoney(secs * wage);
+    }
+  } else {
+    $("moneyOt").classList.add("hidden");
+  }
+
+  // 主按钮：根据状态显示摸鱼/加班
+  const btn = $("mainBtn");
+  const r = resolveDay(t);
+  const ov = S.overrides[dayKey(t)];
+  if (my.active) {
+    btn.textContent = "继续搬砖";
+    btn.className = "main-btn moyu-ing";
+  } else if (st.type === "working" && r.overtimeMin > 0) {
+    btn.textContent = "结束加班";
+    btn.className = "main-btn ot-ing";
+  } else if (st.type === "working") {
+    btn.textContent = "开始摸鱼";
+    btn.className = "main-btn";
+  } else if (st.type === "offWork" && r.work) {
+    // 下班了但今天本来是工作日 → 加班入口
+    btn.textContent = ov && ov.type === "overtime" ? "结束加班" : "开始加班";
+    btn.className = "main-btn ot-ing";
+  } else if (st.type === "beforeWork" && r.work) {
+    btn.textContent = "还没上班";
+    btn.className = "main-btn";
+  } else {
+    btn.textContent = "今天休息";
+    btn.className = "main-btn";
+  }
+
+  // 今日特殊
+  $("overrideNote").textContent = ov ? `（${{overtime:"加班+2h",holiday:"放假",leave:"请假"}[ov.type]}）` : "";
+
+  // 内容高度会随状态/钱卡变化，定期校准窗口高度（无变化时不会真的调整）
+  autoFit();
+}
+
+/* ============ 交互 ============ */
+function toggleMoyu() {
+  const t = now();
+  const st = statusAt(t);
+  const r = resolveDay(t);
+  const my = moyuMs(t);
+  const ov = S.overrides[dayKey(t)];
+  const inOvertime = r.work && r.overtimeMin > 0; // 当前正在加班
+
+  // 摸鱼中 → 结束摸鱼
+  if (my.active) {
+    const active = S.moyuSessions.find(s => s.end == null);
+    active.end = t.getTime();
+    save(); render();
+    return;
+  }
+
+  // 加班中 → 结束加班（清掉 override）
+  if (inOvertime) { setOv(null); return; }
+
+  // 下班后的工作日 → 开始加班 +60 分钟（可叠加）
+  if (st.type === "offWork" && r.work) { setOv({ type: "overtime", minutes: 60 }); return; }
+
+  // 上班中 → 开始摸鱼
+  if (st.type === "working") {
+    S.moyuSessions.push({ start: t.getTime(), end: null });
+    save(); render();
+  }
+}
+$("mainBtn").onclick = toggleMoyu;
+$("dogSvg").onclick = toggleMoyu;   // 点小狗也能摸鱼
+
+$("todoToggle").onclick = () => { $("todoDrawer").classList.toggle("open"); $("gearDrawer").classList.remove("open"); autoFit(); };
+$("gearToggle").onclick = () => { $("gearDrawer").classList.toggle("open"); $("todoDrawer").classList.remove("open"); syncSettingsUI(); autoFit(); };
+
+function renderTodos() {
+  const ul = $("todoList"); ul.innerHTML = "";
+  for (const item of S.todos) {
+    const li = document.createElement("li");
+    if (item.done) li.className = "done";
+    const cb = document.createElement("input");
+    cb.type = "checkbox"; cb.checked = item.done;
+    cb.onchange = () => { item.done = cb.checked; save(); renderTodos(); };
+    const sp = document.createElement("span"); sp.className = "t"; sp.textContent = item.title;
+    const del = document.createElement("button"); del.className = "del"; del.textContent = "✕";
+    del.onclick = () => { S.todos = S.todos.filter(x => x.id !== item.id); save(); renderTodos(); };
+    li.append(cb, sp, del); ul.appendChild(li);
+  }
+  $("todoLeft").textContent = S.todos.filter(x => !x.done).length;
+  autoFit();  // 待办增减后窗口跟着长/缩
+}
+$("todoAddBtn").onclick = () => {
+  const v = $("todoInput").value.trim(); if (!v) return;
+  S.todos.push({ id: Date.now(), title: v, done: false });
+  $("todoInput").value = ""; save(); renderTodos();
+};
+
+/* ---- 设置 ---- */
+const WD = [["一",2],["二",3],["三",4],["四",5],["五",6],["六",7],["日",1]];
+function syncSettingsUI() {
+  const row = $("wdRow"); row.innerHTML = "";
+  WD.forEach(([label, code]) => {
+    const b = document.createElement("button");
+    b.className = "wd-btn" + (S.schedule.workdays.includes(code) ? " on" : "");
+    b.textContent = label;
+    b.onclick = () => {
+      const i = S.schedule.workdays.indexOf(code);
+      i >= 0 ? S.schedule.workdays.splice(i, 1) : S.schedule.workdays.push(code);
+      b.classList.toggle("on"); save(); render();
+    };
+    row.appendChild(b);
+  });
+  $("startTime").value = `${String(S.schedule.startH).padStart(2,"0")}:${String(S.schedule.startM).padStart(2,"0")}`;
+  $("endTime").value = `${String(S.schedule.endH).padStart(2,"0")}:${String(S.schedule.endM).padStart(2,"0")}`;
+  $("salaryInput").value = S.salary || "";
+  document.querySelectorAll("#otRateRow .seg-btn").forEach(b => {
+    b.classList.toggle("on", Number(b.dataset.rate) === S.otRate);
+    b.onclick = () => { S.otRate = Number(b.dataset.rate); save(); syncSettingsUI(); render(); };
+  });
+  syncSkinUI();
+}
+$("startTime").onchange = e => { const [h,m] = e.target.value.split(":").map(Number); S.schedule.startH=h; S.schedule.startM=m; save(); render(); };
+$("endTime").onchange = e => { const [h,m] = e.target.value.split(":").map(Number); S.schedule.endH=h; S.schedule.endM=m; save(); render(); };
+$("salaryInput").onchange = e => { S.salary = Math.max(0, Number(e.target.value) || 0); save(); render(); };
+
+function setOv(v) { const k = dayKey(now()); v ? S.overrides[k] = v : delete S.overrides[k]; save(); render(); }
+$("ovOvertime").onclick = () => setOv({ type: "overtime", minutes: 120 });
+$("ovHoliday").onclick = () => setOv({ type: "holiday" });
+$("ovLeave").onclick = () => setOv({ type: "leave" });
+$("ovClear").onclick = () => setOv(null);
+
+/* ---- 演示时间机 ---- */
+function monday(base) { const d = startOfDay(base); return new Date(d.getTime() - ((base.getDay()+6)%7) * DAY_MS); }
+const PRESETS = {
+  "wed-noon": b => { const m = monday(b); m.setDate(m.getDate()+2); m.setHours(13,30,0,0); return m; },
+  "fri-1700": b => { const m = monday(b); m.setDate(m.getDate()+4); m.setHours(17,0,0,0); return m; },
+  "sat-noon": b => { const m = monday(b); m.setDate(m.getDate()+5); m.setHours(11,0,0,0); return m; },
+};
+document.querySelectorAll("[data-sim]").forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll("[data-sim]").forEach(x => x.classList.remove("on"));
+    if (btn.dataset.sim === "real") sim = null;
+    else { btn.classList.add("on"); const d = PRESETS[btn.dataset.sim](new Date()); sim = { base: d.getTime(), setAt: Date.now() }; }
+    render();
+  };
+});
+
+/* ============ 首次引导 ============ */
+const OB_STEPS = [
+  () => `
+    <h2>先说好你几点上下班</h2>
+    <div class="ob-sub">狗要掐着点替你盼下班</div>
+    <div class="field"><label>上班时间</label><input type="time" id="obStart" value="09:00"></div>
+    <div class="field"><label>下班时间</label><input type="time" id="obEnd" value="18:00"></div>
+    <div class="ob-actions"><button class="main-btn" id="obNext">下一步</button></div>`,
+  () => `
+    <h2>你家是单休还是双休？</h2>
+    <div class="ob-sub">决定「距周末还有多久」进度条和一周进度的计算</div>
+    <div class="seg-row" id="obRestRow" style="flex-direction:column; gap:8px; margin-top:6px">
+      <button class="seg-btn rest-pick on" data-rest="double" style="padding:10px; font-size:13px;">
+        <b style="font-size:14px;">双休</b><br><span style="font-weight:normal; font-size:11px; opacity:.7">周一到周五上班 · 周六周日休息</span>
+      </button>
+      <button class="seg-btn rest-pick" data-rest="single-sun" style="padding:10px; font-size:13px;">
+        <b style="font-size:14px;">单休 · 周日</b><br><span style="font-weight:normal; font-size:11px; opacity:.7">周一到周六上班 · 只有周日休息</span>
+      </button>
+      <button class="seg-btn rest-pick" data-rest="single-sat" style="padding:10px; font-size:13px;">
+        <b style="font-size:14px;">单休 · 周六</b><br><span style="font-weight:normal; font-size:11px; opacity:.7">周二到周日上班 · 只有周六休息</span>
+      </button>
+    </div>
+    <div class="ob-actions"><button class="main-btn" id="obNext">下一步</button></div>`,
+  () => `
+    <h2>月薪多少？</h2>
+    <div class="ob-sub">放心，狗嘴很严。录了它，摸鱼的每一毫秒都给你折算成钱</div>
+    <div class="field"><label>月薪（元）</label><input type="number" id="obSalary" placeholder="例如 15000" min="0" step="500"></div>
+    <div class="ob-actions">
+      <button class="ob-skip" id="obSkip">先不录</button>
+      <button class="main-btn" id="obNext">下一步</button>
+    </div>`,
+  () => `
+    <h2>加班有加班费吗？</h2>
+    <div class="ob-sub">没有的话，加班时长按「白给」算；有就按倍率算「回血」</div>
+    <div class="seg-row" style="margin-top:4px" id="obRateRow">
+      <button class="seg-btn on" data-rate="0">没有（落泪）</button>
+      <button class="seg-btn" data-rate="1.5">1.5×</button>
+      <button class="seg-btn" data-rate="2">2×</button>
+      <button class="seg-btn" data-rate="3">3×</button>
+    </div>
+    <div class="ob-actions"><button class="main-btn" id="obDone">开整！</button></div>`,
+];
+let obStep = 0, obRate = 0, obRest = "double";
+function showOb() {
+  const card = $("obCard");
+  card.innerHTML = OB_STEPS[obStep]();
+  $("onboarding").classList.add("show");
+  autoFit();
+
+  // 休息模式选择（obStep=1）—— 选好立刻落到 S.schedule.workdays
+  if (obStep === 1) {
+    document.querySelectorAll("#obRestRow .rest-pick").forEach(b => {
+      b.onclick = () => {
+        document.querySelectorAll("#obRestRow .rest-pick").forEach(x => x.classList.remove("on"));
+        b.classList.add("on");
+        obRest = b.dataset.rest;
+        const preset = REST_PRESETS[obRest];
+        if (preset && preset.workdays) S.schedule.workdays = [...preset.workdays];
+        S.restMode = obRest;
+      };
+    });
+    $("obNext").onclick = () => { save(); obStep++; showOb(); };
+    return;
+  }
+
+  if (obStep === 3) {
+    document.querySelectorAll("#obRateRow .seg-btn").forEach(b => {
+      b.onclick = () => {
+        document.querySelectorAll("#obRateRow .seg-btn").forEach(x => x.classList.remove("on"));
+        b.classList.add("on"); obRate = Number(b.dataset.rate);
+      };
+    });
+    $("obDone").onclick = () => {
+      S.otRate = obRate; S.onboarded = true; save();
+      $("onboarding").classList.remove("show"); render();
+    };
+    return;
+  }
+  $("obNext").onclick = () => {
+    if (obStep === 0) {
+      const [sh, sm] = $("obStart").value.split(":").map(Number);
+      const [eh, em] = $("obEnd").value.split(":").map(Number);
+      S.schedule.startH = sh; S.schedule.startM = sm; S.schedule.endH = eh; S.schedule.endM = em;
+    } else if (obStep === 2) {
+      S.salary = Math.max(0, Number($("obSalary").value) || 0);
+    }
+    save(); obStep++; showOb();
+  };
+  const skip = $("obSkip");
+  if (skip) skip.onclick = () => { save(); obStep++; showOb(); };
+}
+
+/* ============ 启动 & 省电调度 ============ */
+// 只在窗口可见时渲染；摸鱼才需要 47ms 毫秒级刷新，平时 1s 足够
+let renderTimer = 0;
+const isVisible = () => document.visibilityState === "visible";
+
+function loopRender() {
+  clearTimeout(renderTimer);
+  renderTimer = 0;
+  if (!isVisible()) return;
+  render();
+  renderTimer = setTimeout(loopRender, moyuMs(now()).active ? 47 : 1000);
+}
+
+function setAwake(awake) {
+  if (awake) {
+    document.body.classList.remove("paused");
+    if (!renderTimer) loopRender();
+    if (!petTimer && petMood) rotateAct(); // 恢复桌宠动作轮换
+  } else {
+    document.body.classList.add("paused");
+    clearTimeout(renderTimer); renderTimer = 0;
+    clearTimeout(petTimer); petTimer = 0;
+  }
+}
+
+applySkin(S.skin);
+renderTodos();
+setAwake(isVisible());
+document.addEventListener("visibilitychange", () => setAwake(isVisible()));
+// 托盘显示/隐藏窗口时由 Rust 发事件，精确控制暂停
+if (window.__TAURI__ && window.__TAURI__.event) {
+  window.__TAURI__.event.listen("wm:visibility", e => setAwake(!!e.payload));
+}
+
+/* ============ 自动更新 ============
+ * 托盘菜单"检查更新" → Rust emit wm:check-update → 前端触发
+ * 启动时也自动后台 check 一次（不打扰用户，有新版才弹气泡）
+ */
+async function runUpdateCheck(manual = false) {
+  const updater = window.__TAURI__?.plugin?.updater;
+  if (!updater) { if (manual) setBubble("当前版本不支持自动更新"); return; }
+
+  try {
+    if (manual) setBubble("检查更新中…");
+    const update = await updater.check();
+    if (!update) {
+      if (manual) setBubble("已是最新版本 ✨");
+      return;
+    }
+    setBubble(`发现新版本 v${update.version}，开始下载…`);
+    // 监听下载进度（可选）
+    try {
+      await updater.onUpdaterEvent(event => {
+        if (event.event === "Progress") {
+          const pct = Math.round((event.data?.progress || 0) * 100);
+          if (pct % 10 === 0) setBubble(`下载中 ${pct}%…`);
+        } else if (event.event === "Error") {
+          setBubble("下载失败：" + (event.data?.message || "未知错误"));
+        } else if (event.event === "Downloaded") {
+          setBubble(`下载完成，正在安装 v${update.version}…`);
+        }
+      });
+    } catch (_) { /* 旧版 API 可能没这个方法 */ }
+    await updater.download_and_install();
+    // 上面会自动重启到新版本，除非失败才走到下面
+    setBubble("请手动退出并重新打开 App 完成更新");
+  } catch (e) {
+    console.warn("[updater] failed", e);
+    if (manual) setBubble("更新失败：" + (e.message || "网络问题"));
+  }
+}
+// 托盘菜单的"检查更新…"
+if (window.__TAURI__?.event) {
+  window.__TAURI__.event.listen("wm:check-update", () => runUpdateCheck(true));
+}
+// 启动后后台偷偷 check 一次（等 UI 初始化完 10 秒，给网络点时间）
+if (window.__TAURI__) setTimeout(() => runUpdateCheck(false), 10000);
+
+if (!S.onboarded) showOb();
+// 字体/布局稳定后再校一次窗口高度
+setTimeout(autoFit, 600);
+</script>
+</body>
+</html>

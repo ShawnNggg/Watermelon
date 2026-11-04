@@ -1,0 +1,53 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Watermelon",
+  "version": "0.1.0",
+  "identifier": "com.watermelon.widget",
+  "build": {
+    "frontendDist": "../ui"
+  },
+  "app": {
+    "withGlobalTauri": true,
+    "macOSPrivateApi": true,
+    "windows": [
+      {
+        "label": "main",
+        "title": "下班啦",
+        "width": 300,
+        "height": 380,
+        "minWidth": 280,
+        "minHeight": 200,
+        "transparent": true,
+        "decorations": false,
+        "alwaysOnTop": false,
+        "skipTaskbar": true,
+        "shadow": false,
+        "resizable": true
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["dmg", "app"],
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns"
+    ],
+    "category": "public.app-category.productivity",
+    "shortDescription": "下班啦 — 打工人桌面挂件",
+    "createUpdaterArtifacts": true
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEUyNkUzNjRGQzgyOEJCNzMKUldSenV5aklUelp1NG1EQVhBL3RXZitBSWx2LzRkZTNWZUpZNndsKzRXZGZ5N1dRaFp6dFU1RlkK",
+      "endpoints": [
+        "https://github.com/yourname/Watermelon/releases/latest/download/latest.json"
+      ]
+    }
+  }
+}

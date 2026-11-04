@@ -1,0 +1,33 @@
+# Swift PM
+.build/
+.swiftpm/
+**/*.xcodeproj/
+Package.resolved.bak
+
+# Rust
+target/
+**/*.rs.bk
+Cargo.lock.bak
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-store/
+
+# Tauri / 本地签名密钥（绝对不能 commit！）
+src-tauri/*.key
+src-tauri/*.key.pub
+src-tauri/tauri.conf.local.json
+.env.local
+
+# IDE / macOS
+.DS_Store
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# App 打包产物
+widget/src-tauri/target/

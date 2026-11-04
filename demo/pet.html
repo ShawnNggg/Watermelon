@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>小狗桌宠 · 动画实验室</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: ui-rounded, "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+    background: #EFEBE3;
+    min-height: 100vh;
+    display: flex; flex-direction: column; align-items: center;
+    padding: 36px 16px 60px;
+    color: #2B2B2B;
+  }
+  h1 { font-size: 22px; margin-bottom: 4px; }
+  .sub { font-size: 13px; color: #9A938B; margin-bottom: 26px; }
+
+  /* 场景卡片：模拟挂件里的桌宠区域 */
+  .stage {
+    width: 340px; height: 300px;
+    background: rgba(255,252,246,.92);
+    border-radius: 28px;
+    box-shadow: 0 18px 50px rgba(35,35,35,.18);
+    display: flex; align-items: flex-end; justify-content: center;
+    position: relative; overflow: hidden;
+    margin-bottom: 14px;
+  }
+  .bubble {
+    position: absolute; top: 18px; left: 18px; right: 18px;
+    background: #fff; border-radius: 14px; border-bottom-left-radius: 4px;
+    padding: 8px 12px; font-size: 12.5px; text-align: center;
+    box-shadow: 0 3px 10px rgba(35,35,35,.08);
+    transition: opacity .25s; z-index: 5;
+  }
+  .bubble.fade { opacity: 0; }
+
+  .controls { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; max-width: 400px; }
+  .controls.acts { margin-top: 10px; min-height: 30px; }
+  .chip {
+    border: 1.5px solid #DDD5C8; background: #FFF9F2; border-radius: 999px;
+    padding: 8px 16px; font-size: 13px; cursor: pointer; font-family: inherit;
+  }
+  .chip.on { background: #1F8A5B; border-color: #1F8A5B; color: #fff; font-weight: 700; }
+  .chip.small { padding: 5px 12px; font-size: 11.5px; }
+  .chip.small.on { background: #C08A54; border-color: #C08A54; }
+  .note { font-size: 11.5px; color: #9A938B; margin-top: 14px; text-align: center; line-height: 1.7; }
+
+  /* ================================================================
+     小狗动画系统
+     所有可动部件统一用 transform-box: fill-box，原点跟随元素包围盒
+     ================================================================ */
+  .dog { width: 200px; height: 175px; overflow: visible; }
+  .dog * { transform-box: fill-box; }
+
+  /* --- 常驻微动作 --- */
+  .tail { transform-origin: 0% 50%; animation: wag .65s ease-in-out infinite alternate; transition: transform .35s; }
+  @keyframes wag { from { transform: rotate(-10deg); } to { transform: rotate(16deg); } }
+
+  .breath { transform-origin: 50% 90%; animation: breathe 2.6s ease-in-out infinite; }
+  @keyframes breathe { 0%,100% { transform: scale(1,1); } 50% { transform: scale(1.02,.985); } }
+
+  .eye { transform-origin: 50% 50%; animation: blink 4s infinite; }
+  @keyframes blink { 0%,93%,100% { transform: scaleY(1); } 96% { transform: scaleY(.1); } }
+  .gaze { transition: transform .35s; }
+
+  /* 好奇歪头：每 9s 一次，耳朵跟随 */
+  .head { transform-origin: 50% 85%; animation: tilt 9s ease-in-out infinite; }
+  @keyframes tilt {
+    0%,78%,100% { transform: rotate(0deg); }
+    84% { transform: rotate(-7deg); }
+    92% { transform: rotate(5deg); }
+  }
+  .ear-l { transform-origin: 80% 20%; animation: earL 9s ease-in-out infinite; transition: transform .35s; }
+  .ear-r { transform-origin: 20% 20%; animation: earR 9s ease-in-out infinite; transition: transform .35s; }
+  @keyframes earL { 0%,78%,100% { transform: rotate(0); } 84% { transform: rotate(-12deg); } 92% { transform: rotate(6deg); } }
+  @keyframes earR { 0%,78%,100% { transform: rotate(0); } 84% { transform: rotate(-8deg); } 92% { transform: rotate(10deg); } }
+
+  .tongue { opacity: 0; transition: opacity .3s; }
+  .zzz, .heart, .crumb, .sweat, .snooze, .scold-mark { opacity: 0; }
+  .paw-l, .paw-r { transition: opacity .25s; }
+
+  /* 道具与形态切换 */
+  .prop { opacity: 0; transition: opacity .3s; }
+  .dog-sit { transition: opacity .3s; }
+  .dog-lie, .dog-stand, .dog-toilet { opacity: 0; transition: opacity .3s; }
+  .stage[data-act="present"] .dog-sit,
+  .stage[data-act="toilet"] .dog-sit,
+  .stage[data-act="sleep"] .dog-sit { opacity: 0; }
+  .stage[data-act="present"] .dog-stand,
+  .stage[data-act="toilet"] .dog-toilet,
+  .stage[data-act="sleep"] .dog-lie { opacity: 1; }
+
+  /* ============ 搬砖 · 敲键盘 ============ */
+  .stage[data-act="typing"] .prop-laptop,
+  .stage[data-act="overtime"] .prop-laptop { opacity: 1; }
+  .stage[data-act="typing"] .paw-l { animation: tapL .34s ease-in-out infinite alternate; }
+  .stage[data-act="typing"] .paw-r { animation: tapR .34s ease-in-out infinite alternate .17s; }
+  .stage[data-act="overtime"] .paw-l { animation: tapL .95s ease-in-out infinite alternate; }
+  .stage[data-act="overtime"] .paw-r { animation: tapR .95s ease-in-out infinite alternate .45s; }
+  @keyframes tapL { from { transform: translate(4px,-15px); } to { transform: translate(4px,-18px); } }
+  @keyframes tapR { from { transform: translate(-4px,-15px); } to { transform: translate(-4px,-18px); } }
+  .stage[data-act="typing"] .gaze, .stage[data-act="overtime"] .gaze { transform: translateY(2.2px); }
+  .stage[data-act="typing"] .head { animation: typeHead 4.5s ease-in-out infinite; }
+  @keyframes typeHead {
+    0%,100% { transform: rotate(2deg) translateY(1.5px); }
+    50% { transform: rotate(2.5deg) translateY(2.5px); }
+  }
+
+  /* ============ 搬砖 · 做汇报（站姿 + 展板） ============ */
+  .pointer-arm { transform-origin: 0% 100%; }
+  .stage[data-act="present"] .pointer-arm { animation: pointTap 2.8s ease-in-out infinite; }
+  @keyframes pointTap {
+    0%,100% { transform: rotate(0); }
+    30% { transform: rotate(-6deg); }
+    45% { transform: rotate(0); }
+    60% { transform: rotate(-6deg); }
+    75% { transform: rotate(0); }
+  }
+  .stage[data-act="present"] .head-s { transform-origin: 50% 85%; animation: presentBob 2.8s ease-in-out infinite; }
+  @keyframes presentBob { 0%,100% { transform: rotate(0); } 40% { transform: rotate(2.5deg); } }
+  .stage[data-act="present"] .jaw,
+  .stage[data-act="phone"] .jaw { transform-origin: 50% 0%; animation: talk .42s ease-in-out infinite; }
+  @keyframes talk { 0%,100% { transform: scaleY(1); } 50% { transform: scaleY(1.8); } }
+
+  /* ============ 搬砖 · 挨老板骂 ============ */
+  .stage[data-act="scolded"] .head { animation: bowHead 3.6s ease-in-out infinite; }
+  @keyframes bowHead {
+    0%,60%,100% { transform: rotate(9deg) translateY(4px); }
+    66% { transform: rotate(12deg) translateY(6.5px); }
+    72% { transform: rotate(9deg) translateY(4px); }
+    78% { transform: rotate(12deg) translateY(6px); }
+    84% { transform: rotate(9deg) translateY(4px); }
+  }
+  .stage[data-act="scolded"] .ear-l { animation: none; transform: rotate(22deg); }
+  .stage[data-act="scolded"] .ear-r { animation: none; transform: rotate(-22deg); }
+  .stage[data-act="scolded"] .tail { animation: none; transform: rotate(-40deg); }
+  .stage[data-act="scolded"] .gaze { transform: translateY(3px); }
+  .stage[data-act="scolded"] .dog-sit { animation: tremble 3.6s ease-in-out infinite; }
+  @keyframes tremble {
+    0%,7%,15%,100% { transform: translateX(0); }
+    9% { transform: translateX(-1.3px); }
+    11% { transform: translateX(1.3px); }
+    13% { transform: translateX(-.6px); }
+  }
+  .stage[data-act="scolded"] .scold-mark { opacity: 1; transform-origin: 50% 50%; animation: markPop 3.6s ease-out infinite; }
+  @keyframes markPop {
+    0%,7%,16%,100% { transform: scale(0); opacity: 0; }
+    9% { transform: scale(1.3); opacity: 1; }
+    14% { transform: scale(1); opacity: 1; }
+  }
+  .stage[data-act="scolded"] .sweat,
+  .stage[data-act="overtime"] .sweat { opacity: 1; animation: sweatDrop 1.8s ease-in infinite; }
+  .stage[data-act="scolded"] .sweat.s2,
+  .stage[data-act="overtime"] .sweat.s2 { animation-delay: .9s; }
+  @keyframes sweatDrop {
+    0% { transform: translateY(0); opacity: 0; }
+    20% { opacity: 1; }
+    100% { transform: translateY(20px); opacity: 0; }
+  }
+
+  /* ============ 搬砖 · 打瞌睡 ============ */
+  .stage[data-act="dozing"] .eye { animation: none; transform: scaleY(.3); }
+  .stage[data-act="dozing"] .head { animation: nodOff 5s ease-in-out infinite; }
+  @keyframes nodOff {
+    0%,70%,100% { transform: rotate(0) translateY(0); }
+    80% { transform: rotate(2deg) translateY(4px); }
+    90% { transform: rotate(0) translateY(0); }
+  }
+  .stage[data-act="dozing"] .snooze { opacity: 1; animation: zfloat2 2.4s ease-in-out infinite; }
+  @keyframes zfloat2 {
+    0% { transform: translate(0,0) scale(.6); opacity: 0; }
+    30% { opacity: 1; }
+    100% { transform: translate(10px,-22px) scale(1.05); opacity: 0; }
+  }
+  .stage[data-act="dozing"] .tail { animation-duration: 1.6s; }
+
+  /* ============ 搬砖 · 打电话 ============ */
+  .stage[data-act="phone"] .prop-phone { opacity: 1; }
+  .stage[data-act="phone"] .paw-r { opacity: 0; }
+  .stage[data-act="phone"] .head { animation: phoneTalk 4s ease-in-out infinite; }
+  @keyframes phoneTalk {
+    0%,100% { transform: rotate(7deg) translateY(0); }
+    20% { transform: rotate(7deg) translateY(2px); }
+    40% { transform: rotate(7deg) translateY(0); }
+    60% { transform: rotate(7deg) translateY(2px); }
+    80% { transform: rotate(7deg) translateY(0); }
+  }
+  .stage[data-act="phone"] .ear-r { animation: none; transform: rotate(-16deg); }
+  .stage[data-act="phone"] .gaze { transform: translateY(-1px); }
+
+  /* ============ 摸鱼 · 狗爪拿瓜 ============ */
+  .stage[data-act="melon"] .prop-melon { opacity: 1; transform: translate(26px,-34px) rotate(-18deg); }
+  .prop-melon { transform-origin: 50% 50%; transition: opacity .3s, transform .5s cubic-bezier(.34,1.56,.64,1); }
+  .stage[data-act="melon"] .paw-l, .stage[data-act="melon"] .paw-r { opacity: 0; }
+  .stage[data-act="melon"] .head { animation: nom .55s ease-in-out infinite; }
+  @keyframes nom {
+    0%,100% { transform: rotate(3deg) translateY(0); }
+    50% { transform: rotate(3deg) translateY(2.5px); }
+  }
+  .stage[data-act="melon"] .jaw { transform-origin: 50% 0%; animation: chew .55s ease-in-out infinite; }
+  @keyframes chew { 0%,100% { transform: scaleY(1); } 50% { transform: scaleY(1.9); } }
+  .stage[data-act="melon"] .tongue { opacity: 1; }
+  .stage[data-act="melon"] .tail { animation-duration: .32s; }
+  .stage[data-act="melon"] .ear-l, .stage[data-act="melon"] .ear-r { animation: none; }
+  .stage[data-act="melon"] .gaze { transform: translateY(-1.5px); }
+  .stage[data-act="melon"] .crumb { opacity: 1; animation: drop 1.1s ease-in infinite; }
+  .stage[data-act="melon"] .crumb.c2 { animation-delay: .55s; }
+  @keyframes drop {
+    0% { transform: translateY(0); opacity: 0; }
+    15% { opacity: 1; }
+    100% { transform: translateY(30px); opacity: 0; }
+  }
+
+  /* ============ 摸鱼 · 蹲坑刷手机 ============ */
+  .stage[data-act="toilet"] .thumb { animation: swipe 2.4s ease-in-out infinite; }
+  @keyframes swipe {
+    0%,60%,100% { transform: translateY(0); }
+    72% { transform: translateY(-7px); }
+    84% { transform: translateY(-7px); }
+  }
+  .stage[data-act="toilet"] .leg-l { transform-origin: 50% 0%; animation: swingL 1.2s ease-in-out infinite alternate; }
+  .stage[data-act="toilet"] .leg-r { transform-origin: 50% 0%; animation: swingR 1.2s ease-in-out infinite alternate; }
+  @keyframes swingL { from { transform: rotate(5deg); } to { transform: rotate(-5deg); } }
+  @keyframes swingR { from { transform: rotate(-5deg); } to { transform: rotate(5deg); } }
+  .stage[data-act="toilet"] .glow { opacity: .16; transition: opacity .5s; }
+  .stage[data-act="toilet"] .head-t { transform-origin: 50% 85%; animation: chuckle 4.2s ease-in-out infinite; }
+  @keyframes chuckle {
+    0%,82%,100% { transform: translateY(0); }
+    86% { transform: translateY(1.6px); }
+    90% { transform: translateY(0); }
+    94% { transform: translateY(1.6px); }
+  }
+  .gaze-t { transform: translateY(3px); }
+
+  /* ============ 加班硬撑 ============ */
+  .stage[data-act="overtime"] .head { animation: nodOff 5s ease-in-out infinite; }
+  .stage[data-act="overtime"] .eye { animation: doze 5s infinite; }
+  @keyframes doze { 0%,70%,100% { transform: scaleY(1); } 78%,86% { transform: scaleY(.25); } }
+  .stage[data-act="overtime"] .tail { animation-duration: 1.4s; }
+
+  /* ============ 下班撒欢 ============ */
+  .stage[data-act="happy"] .breath { animation: hop .55s cubic-bezier(.36,0,.64,1) infinite; }
+  @keyframes hop {
+    0%,100% { transform: translateY(0) scale(1,1); }
+    30% { transform: translateY(-14px) scale(.98,1.03); }
+    55% { transform: translateY(0) scale(1.04,.94); }
+    70% { transform: translateY(-4px) scale(1,1); }
+  }
+  .stage[data-act="happy"] .tail { animation-duration: .22s; }
+  .stage[data-act="happy"] .tongue { opacity: 1; }
+  .stage[data-act="happy"] .head { animation: shake .55s ease-in-out infinite; }
+  @keyframes shake { 0%,100% { transform: rotate(-4deg); } 50% { transform: rotate(4deg); } }
+  .stage[data-act="happy"] .ear-l { transform-origin: 80% 20%; animation: flapL .55s ease-in-out infinite; }
+  .stage[data-act="happy"] .ear-r { transform-origin: 20% 20%; animation: flapR .55s ease-in-out infinite; }
+  @keyframes flapL { 0%,100% { transform: rotate(-6deg); } 50% { transform: rotate(10deg); } }
+  @keyframes flapR { 0%,100% { transform: rotate(6deg); } 50% { transform: rotate(-10deg); } }
+  .stage[data-act="happy"] .heart { opacity: 1; animation: floatUp 1.6s ease-out infinite; }
+  .stage[data-act="happy"] .heart.h2 { animation-delay: .55s; }
+  .stage[data-act="happy"] .heart.h3 { animation-delay: 1.1s; }
+  @keyframes floatUp {
+    0% { transform: translateY(0) scale(.4); opacity: 0; }
+    25% { opacity: 1; }
+    100% { transform: translateY(-46px) scale(1); opacity: 0; }
+  }
+
+  /* ============ 周末趴睡 ============ */
+  .stage[data-act="sleep"] .zzz { opacity: 1; animation: zfloat 2.2s ease-in-out infinite; }
+  .stage[data-act="sleep"] .zzz.z2 { animation-delay: .7s; font-size: 15px; }
+  .stage[data-act="sleep"] .zzz.z3 { animation-delay: 1.4s; font-size: 19px; }
+  @keyframes zfloat {
+    0% { transform: translate(0,0) scale(.6); opacity: 0; }
+    30% { opacity: 1; }
+    100% { transform: translate(14px,-30px) scale(1.15); opacity: 0; }
+  }
+  .stage[data-act="sleep"] .breath-lie { transform-origin: 50% 100%; animation: sleepBreathe 3.4s ease-in-out infinite; }
+  @keyframes sleepBreathe { 0%,100% { transform: scale(1,1); } 50% { transform: scale(1.035,.96); } }
+  .stage[data-act="sleep"] .tail-lie { transform-origin: 0% 50%; animation: wag 3s ease-in-out infinite alternate; }
+</style>
+</head>
+<body>
+
+<h1>小狗桌宠 · 动画实验室</h1>
+<div class="sub">爱吃西瓜的奶油小狗 · 搬砖/摸鱼自动轮换小动作</div>
+
+<div class="stage" id="stage" data-state="working" data-act="typing">
+  <div class="bubble" id="bubble">噼里啪啦一顿敲，其实在斗图</div>
+
+  <svg class="dog" viewBox="0 0 160 150" id="dog">
+    <!-- ============ 坐姿形态 ============ -->
+    <g class="dog-sit">
+      <!-- 尾巴 -->
+      <path class="tail" d="M118 104 Q 138 96 140 78" fill="none" stroke="#C08A54" stroke-width="9" stroke-linecap="round"/>
+
+      <g class="breath">
+        <!-- 身体 -->
+        <ellipse cx="80" cy="112" rx="42" ry="32" fill="#F7E6C9"/>
+        <ellipse cx="80" cy="120" rx="26" ry="18" fill="#FDEFDA"/>
+        <!-- 前爪（敲键盘/打电话/抱瓜时会被替换或隐藏） -->
+        <ellipse class="paw-l" cx="62" cy="138" rx="11" ry="7" fill="#F7E6C9" stroke="#EAD3AE" stroke-width="1.5"/>
+        <ellipse class="paw-r" cx="98" cy="138" rx="11" ry="7" fill="#F7E6C9" stroke="#EAD3AE" stroke-width="1.5"/>
+
+        <!-- 笔记本电脑（敲键盘/加班） -->
+        <g class="prop prop-laptop">
+          <rect x="48" y="126" width="64" height="5.5" rx="2.75" fill="#C7CBD6" stroke="#AEB4C2" stroke-width="1"/>
+          <rect x="54" y="94" width="52" height="33" rx="5" fill="#E9EBF1" stroke="#C4C9D4" stroke-width="1.5"/>
+          <path d="M73 108 A7 7 0 0 0 87 108 Z" fill="#FF5D73"/>
+          <path d="M73 108 A7 7 0 0 0 87 108" fill="none" stroke="#1F8A5B" stroke-width="2" stroke-linecap="round"/>
+        </g>
+
+        <!-- 头部整体 -->
+        <g class="head">
+          <path class="ear-l" d="M52 40 Q 30 44 32 70 Q 46 66 54 52 Z" fill="#C08A54"/>
+          <path class="ear-r" d="M108 40 Q 130 44 128 70 Q 114 66 106 52 Z" fill="#C08A54"/>
+          <circle cx="80" cy="58" r="34" fill="#F7E6C9"/>
+          <ellipse cx="56" cy="68" rx="6.5" ry="4" fill="#FFB3C0" opacity=".55"/>
+          <ellipse cx="104" cy="68" rx="6.5" ry="4" fill="#FFB3C0" opacity=".55"/>
+          <g class="gaze">
+            <g class="eye"><circle cx="66" cy="54" r="4.2" fill="#232323"/><circle cx="67.5" cy="52.5" r="1.4" fill="#fff"/></g>
+            <g class="eye"><circle cx="94" cy="54" r="4.2" fill="#232323"/><circle cx="95.5" cy="52.5" r="1.4" fill="#fff"/></g>
+          </g>
+          <ellipse cx="80" cy="68" rx="12" ry="9" fill="#FDEFDA"/>
+          <ellipse cx="80" cy="64" rx="5.5" ry="4" fill="#232323"/>
+          <g class="jaw">
+            <path d="M80 68 Q 80 76 72 75 M80 68 Q 80 76 88 75" stroke="#232323" stroke-width="2" fill="none" stroke-linecap="round"/>
+            <path class="tongue" d="M80 73 Q 76 82 80 86 Q 84 82 80 73" fill="#FF8A9A"/>
+          </g>
+          <!-- 汗滴（挨骂/加班） -->
+          <path class="sweat" d="M112 44 Q 116 50 112 54 Q 108 50 112 44" fill="#7EC8F7"/>
+          <path class="sweat s2" d="M120 56 Q 124 62 120 66 Q 116 62 120 56" fill="#7EC8F7"/>
+          <!-- 打电话：贴耳手机 + 举起的爪子 -->
+          <g class="prop prop-phone">
+            <g transform="rotate(-12 110 57)">
+              <rect x="104" y="47" width="12" height="20" rx="3.5" fill="#2B2B33"/>
+              <rect x="106.5" y="50" width="7" height="12" rx="1.5" fill="#8FD0FF" opacity=".85"/>
+            </g>
+            <ellipse cx="101" cy="66" rx="7" ry="5.5" fill="#F7E6C9" stroke="#EAD3AE" stroke-width="1.2"/>
+          </g>
+          <!-- 挨骂标记 -->
+          <text class="scold-mark" x="116" y="26" font-size="15" font-weight="900" fill="#FF5D5D">！</text>
+        </g>
+
+        <!-- 瞌睡的小 Z（打瞌睡） -->
+        <text class="snooze" x="114" y="38" font-size="12" fill="#9A938B" font-weight="700">Z</text>
+
+        <!-- 西瓜 + 抱瓜的双爪（摸鱼吃瓜） -->
+        <g class="prop prop-melon">
+          <path d="M30 116 A17 17 0 0 0 64 116 Z" fill="#FF5D73"/>
+          <path d="M30 116 A17 17 0 0 0 64 116" fill="none" stroke="#1F8A5B" stroke-width="5" stroke-linecap="round"/>
+          <ellipse cx="41" cy="120" rx="1.4" ry="2.2" fill="#232323"/>
+          <ellipse cx="47" cy="123.5" rx="1.4" ry="2.2" fill="#232323"/>
+          <ellipse cx="54" cy="120" rx="1.4" ry="2.2" fill="#232323"/>
+          <ellipse cx="31" cy="112" rx="7" ry="5.5" fill="#F7E6C9" stroke="#EAD3AE" stroke-width="1.2"/>
+          <ellipse cx="63" cy="112" rx="7" ry="5.5" fill="#F7E6C9" stroke="#EAD3AE" stroke-width="1.2"/>
+        </g>
+        <!-- 掉的瓜籽 -->
+        <ellipse class="crumb" cx="74" cy="88" rx="1.6" ry="2.4" fill="#232323"/>
+        <ellipse class="crumb c2" cx="82" cy="90" rx="1.6" ry="2.4" fill="#232323"/>
+
+        <!-- 爱心（下班） -->
+        <text class="heart" x="36" y="40" font-size="14" fill="#FF5D73">♥</text>
+        <text class="heart h2" x="118" y="34" font-size="12" fill="#FF8A9A">♥</text>
+        <text class="heart h3" x="80" y="24" font-size="10" fill="#FFD0D8">♥</text>
+      </g>
+    </g>
+
+    <!-- ============ 站姿形态：做汇报 ============ -->
+    <g class="dog-stand">
+      <path class="tail" d="M84 118 Q 100 112 102 98" fill="none" stroke="#C08A54" stroke-width="8" stroke-linecap="round"/>
+      <!-- 展板：业绩曲线一路向下 -->
+      <g>
+        <path d="M112 92 L106 146 M140 92 L146 146" stroke="#8A6B4A" stroke-width="4" stroke-linecap="round"/>
+        <rect x="100" y="48" width="54" height="44" rx="4" fill="#FFFFFF" stroke="#D8CFBF" stroke-width="2"/>
+        <path d="M106 58 L106 86 M106 86 L148 86" stroke="#C9C2B6" stroke-width="1.5"/>
+        <polyline points="108,62 116,66 124,71 132,77 141,82" fill="none" stroke="#FF5D5D" stroke-width="2.5" stroke-linecap="round"/>
+        <path d="M141 82 l5 1.5 -4.5 3.5 z" fill="#FF5D5D"/>
+      </g>
+      <!-- 腿 -->
+      <rect x="52" y="128" width="9" height="16" rx="4.5" fill="#F7E6C9" stroke="#EAD3AE" stroke-width="1.2"/>
+      <rect x="67" y="128" width="9" height="16" rx="4.5" fill="#F7E6C9" stroke="#EAD3AE" stroke-width="1.2"/>
+      <!-- 身体 -->
+      <ellipse cx="62" cy="102" rx="22" ry="28" fill="#F7E6C9"/>
+      <ellipse cx="62" cy="110" rx="13" ry="16" fill="#FDEFDA"/>
+      <!-- 垂着的左臂 -->
+      <path d="M46 96 Q 38 106 42 116" stroke="#F7E6C9" stroke-width="9" stroke-linecap="round" fill="none"/>
+      <!-- 举指示棒的右臂 -->
+      <g class="pointer-arm">
+        <path d="M82 92 Q 96 82 104 72" stroke="#F7E6C9" stroke-width="9" stroke-linecap="round" fill="none"/>
+        <line x1="104" y1="72" x2="128" y2="66" stroke="#8A6B4A" stroke-width="3.5" stroke-linecap="round"/>
+      </g>
+      <!-- 头 -->
+      <g class="head-s">
+        <path d="M44 34 Q 24 38 26 60 Q 38 56 45 46 Z" fill="#C08A54"/>
+        <path d="M80 34 Q 100 38 98 60 Q 86 56 79 46 Z" fill="#C08A54"/>
+        <circle cx="62" cy="56" r="27" fill="#F7E6C9"/>
+        <ellipse cx="44" cy="64" rx="5" ry="3.2" fill="#FFB3C0" opacity=".55"/>
+        <ellipse cx="80" cy="64" rx="5" ry="3.2" fill="#FFB3C0" opacity=".55"/>
+        <g class="eye"><circle cx="54" cy="52" r="3.6" fill="#232323"/><circle cx="55.2" cy="50.8" r="1.2" fill="#fff"/></g>
+        <g class="eye"><circle cx="70" cy="52" r="3.6" fill="#232323"/><circle cx="71.2" cy="50.8" r="1.2" fill="#fff"/></g>
+        <ellipse cx="62" cy="64" rx="10" ry="7.5" fill="#FDEFDA"/>
+        <ellipse cx="62" cy="60.5" rx="4.5" ry="3.2" fill="#232323"/>
+        <g class="jaw">
+          <path d="M62 64 Q 62 71 55.5 70 M62 64 Q 62 71 68.5 70" stroke="#232323" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+        </g>
+      </g>
+    </g>
+
+    <!-- ============ 蹲坑形态：刷手机 ============ -->
+    <g class="dog-toilet">
+      <!-- 厕纸 -->
+      <circle cx="130" cy="130" r="7.5" fill="#fff" stroke="#D5DBE1" stroke-width="1.5"/>
+      <circle cx="130" cy="130" r="2.5" fill="#D5DBE1"/>
+      <rect x="126" y="130" width="8.5" height="13" rx="2" fill="#fff" stroke="#D5DBE1" stroke-width="1"/>
+      <!-- 马桶 -->
+      <ellipse cx="80" cy="147" rx="42" ry="4.5" fill="#000" opacity=".07"/>
+      <path d="M46 116 Q 44 140 62 146 L98 146 Q 116 140 114 116 Z" fill="#EDF1F4" stroke="#D5DBE1" stroke-width="2"/>
+      <!-- 身体坐进马桶 -->
+      <ellipse cx="80" cy="100" rx="30" ry="27" fill="#F7E6C9"/>
+      <ellipse cx="80" cy="116" rx="37" ry="13" fill="#F7F9FB" stroke="#D5DBE1" stroke-width="2"/>
+      <!-- 悬空晃悠的小短腿 -->
+      <ellipse class="leg-l" cx="63" cy="130" rx="7" ry="10" fill="#F7E6C9" stroke="#EAD3AE" stroke-width="1.2"/>
+      <ellipse class="leg-r" cx="97" cy="130" rx="7" ry="10" fill="#F7E6C9" stroke="#EAD3AE" stroke-width="1.2"/>
+      <!-- 头 -->
+      <g class="head-t">
+        <path d="M56 42 Q 36 46 38 68 Q 50 64 57 54 Z" fill="#C08A54"/>
+        <path d="M104 42 Q 124 46 122 68 Q 110 64 103 54 Z" fill="#C08A54"/>
+        <circle cx="80" cy="62" r="29" fill="#F7E6C9"/>
+        <ellipse class="glow" cx="80" cy="66" rx="24" ry="20" fill="#BFE3FF" opacity="0"/>
+        <ellipse cx="59" cy="70" rx="5.5" ry="3.5" fill="#FFB3C0" opacity=".55"/>
+        <ellipse cx="101" cy="70" rx="5.5" ry="3.5" fill="#FFB3C0" opacity=".55"/>
+        <g class="gaze-t">
+          <g class="eye"><circle cx="68" cy="58" r="4" fill="#232323"/><circle cx="69.3" cy="56.6" r="1.3" fill="#fff"/></g>
+          <g class="eye"><circle cx="92" cy="58" r="4" fill="#232323"/><circle cx="93.3" cy="56.6" r="1.3" fill="#fff"/></g>
+        </g>
+        <ellipse cx="80" cy="72" rx="11" ry="8" fill="#FDEFDA"/>
+        <ellipse cx="80" cy="67.5" rx="5" ry="3.5" fill="#232323"/>
+        <path d="M74 78 Q 80 82 86 78" stroke="#232323" stroke-width="2" fill="none" stroke-linecap="round"/>
+      </g>
+      <!-- 双手捧手机 -->
+      <rect x="69" y="88" width="22" height="34" rx="5" fill="#2B2B33"/>
+      <rect x="72" y="92" width="16" height="24" rx="2.5" fill="#8FD0FF" opacity=".9"/>
+      <ellipse cx="66" cy="104" rx="7" ry="6" fill="#F7E6C9" stroke="#EAD3AE" stroke-width="1.2"/>
+      <ellipse cx="94" cy="104" rx="7" ry="6" fill="#F7E6C9" stroke="#EAD3AE" stroke-width="1.2"/>
+      <ellipse class="thumb" cx="89" cy="98" rx="3" ry="4.5" fill="#F7E6C9" stroke="#EAD3AE" stroke-width="1"/>
+    </g>
+
+    <!-- ============ 趴睡形态 ============ -->
+    <g class="dog-lie">
+      <g class="breath-lie">
+        <path class="tail-lie" d="M130 128 Q 148 124 150 110" fill="none" stroke="#C08A54" stroke-width="8" stroke-linecap="round"/>
+        <ellipse cx="88" cy="126" rx="52" ry="20" fill="#F7E6C9"/>
+        <circle cx="42" cy="112" r="26" fill="#F7E6C9"/>
+        <path d="M22 100 Q 4 106 8 126 Q 20 122 26 112 Z" fill="#C08A54"/>
+        <path d="M62 100 Q 78 106 74 126 Q 64 122 58 112 Z" fill="#C08A54"/>
+        <path d="M28 110 Q 33 114 38 110" stroke="#232323" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+        <path d="M48 110 Q 53 114 58 110" stroke="#232323" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+        <ellipse cx="43" cy="120" rx="5" ry="3.6" fill="#232323"/>
+        <ellipse cx="26" cy="118" rx="5" ry="3.2" fill="#FFB3C0" opacity=".5"/>
+        <ellipse cx="60" cy="118" rx="5" ry="3.2" fill="#FFB3C0" opacity=".5"/>
+      </g>
+      <text class="zzz" x="78" y="96" font-size="13" fill="#9A938B" font-weight="700">Z</text>
+      <text class="zzz z2" x="88" y="86" fill="#9A938B" font-weight="700">Z</text>
+      <text class="zzz z3" x="100" y="74" fill="#9A938B" font-weight="700">Z</text>
+    </g>
+  </svg>
+</div>
+
+<div class="controls main" id="stateChips">
+  <button class="chip on" data-state="working">搬砖中</button>
+  <button class="chip" data-state="moyu">摸鱼吃瓜</button>
+  <button class="chip" data-state="overtime">加班硬撑</button>
+  <button class="chip" data-state="happy">下班撒欢</button>
+  <button class="chip" data-state="sleep">周末睡觉</button>
+</div>
+<div class="controls acts" id="actChips"></div>
+
+<div class="note">
+  搬砖中 / 摸鱼吃瓜 会在多个小动作之间自动随机轮换，点下方小标签可锁定查看<br>
+  常驻微动作：呼吸起伏 · 眨眼 · 摇尾 · 每 9 秒好奇歪头（耳朵跟随）· 点小狗随机吐槽
+</div>
+
+<script>
+"use strict";
+const stage = document.getElementById("stage");
+const bubble = document.getElementById("bubble");
+const stateChips = document.getElementById("stateChips");
+const actChips = document.getElementById("actChips");
+
+const ACTS = {
+  working: ["typing", "present", "scolded", "dozing", "phone"],
+  moyu: ["melon", "toilet"],
+  overtime: ["overtime"],
+  happy: ["happy"],
+  sleep: ["sleep"],
+};
+const ACT_NAMES = {
+  typing: "敲键盘", present: "做汇报", scolded: "挨骂中", dozing: "打瞌睡", phone: "打电话",
+  melon: "吃瓜", toilet: "蹲坑刷手机",
+  overtime: "有气无力", happy: "撒欢", sleep: "趴睡",
+};
+const ACT_LINES = {
+  typing: ["噼里啪啦一顿敲，其实在斗图", "键盘冒火星，产出为零", "这个需求很简单.jpg"],
+  present: ["我简单讲两句（第 40 分钟）", "大家看这条曲线……它不乐观", "PPT 第 87 页，坚持住"],
+  scolded: ["是是是，马上改（第 8 版）", "好的收到，问题都怪我", "耳朵已关闭，灵魂已下班"],
+  dozing: ["我没睡，我在闭目思考", "眼皮：我先下班了", "zzz…啊！老板我在听！"],
+  phone: ["喂您好，方案已发您邮箱（没发）", "好好好，都可以谈", "客户说要五彩斑斓的黑"],
+  melon: ["吧唧吧唧…这瓜真甜", "摸鱼赚的钱，才是赚的钱", "帮我盯着点老板，汪"],
+  toilet: ["厕所，打工人最后的净土", "带薪蹲坑，赚到", "刷完这条视频就回去…真的"],
+  overtime: ["这个班是非加不可吗", "加班费到账 +0 元", "狗都没我这么累"],
+  happy: ["下班啦！撤！", "今天的班就上到这里！", "西瓜自由！冲！"],
+  sleep: ["（小声打呼噜）", "周末 = 睡到地老天荒"],
+};
+const DOGGY_TALKS = [
+  "汪？", "再点一下试试", "今天瓜不错", "别戳了别戳了",
+  "你下班我就下班", "汪汪汪（翻译：加油）", "想吃西瓜了",
+];
+
+let curState = "working";
+let curAct = null;
+let timer = null;
+
+function randomLine(act) {
+  const arr = ACT_LINES[act];
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
+function setBubble(text) {
+  bubble.classList.add("fade");
+  setTimeout(() => { bubble.textContent = text; bubble.classList.remove("fade"); }, 240);
+}
+
+function setAct(act, withBubble = true) {
+  curAct = act;
+  stage.dataset.act = act;
+  actChips.querySelectorAll(".chip").forEach(c => c.classList.toggle("on", c.dataset.act === act));
+  if (withBubble) setBubble(randomLine(act));
+}
+
+function pickAct() {
+  const list = ACTS[curState];
+  if (list.length === 1) return list[0];
+  let next;
+  do { next = list[Math.floor(Math.random() * list.length)]; } while (next === curAct);
+  return next;
+}
+
+function scheduleRotate() {
+  clearTimeout(timer);
+  timer = setTimeout(() => { setAct(pickAct()); scheduleRotate(); }, 6000 + Math.random() * 3000);
+}
+
+function renderActChips() {
+  const list = ACTS[curState];
+  actChips.innerHTML = "";
+  if (list.length < 2) return;
+  list.forEach(a => {
+    const b = document.createElement("button");
+    b.className = "chip small";
+    b.dataset.act = a;
+    b.textContent = ACT_NAMES[a];
+    b.onclick = () => { setAct(a); scheduleRotate(); };
+    actChips.appendChild(b);
+  });
+}
+
+function setState(s) {
+  curState = s;
+  stage.dataset.state = s;
+  stateChips.querySelectorAll(".chip").forEach(c => c.classList.toggle("on", c.dataset.state === s));
+  renderActChips();
+  setAct(pickAct());
+  scheduleRotate();
+}
+
+stateChips.querySelectorAll(".chip").forEach(btn => {
+  btn.onclick = () => setState(btn.dataset.state);
+});
+
+document.getElementById("dog").addEventListener("click", () => {
+  setBubble(DOGGY_TALKS[Math.floor(Math.random() * DOGGY_TALKS.length)]);
+});
+
+// 初始化
+renderActChips();
+setAct("typing", false);
+scheduleRotate();
+</script>
+</body>
+</html>

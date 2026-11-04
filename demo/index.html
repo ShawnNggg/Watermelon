@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>下班啦 · 演示</title>
+<style>
+  :root {
+    --flesh: #FF5D73;        /* 瓜瓤红 */
+    --flesh-light: #FFD0D8;  /* 浅瓤（摸鱼叠加） */
+    --rind-dark: #1F8A5B;    /* 瓜皮深绿 */
+    --rind-light: #7BD389;   /* 瓜皮浅绿 */
+    --seed: #232323;         /* 籽黑 */
+    --cream: #FFF9F2;        /* 米白背景 */
+    --card: #FFFFFF;
+    --text: #2B2B2B;
+    --text-dim: #9A938B;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: ui-rounded, "SF Pro Rounded", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, sans-serif;
+    background: var(--cream);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 28px 16px 60px;
+  }
+  .wrap { width: 100%; max-width: 460px; display: flex; flex-direction: column; gap: 16px; }
+
+  header { display: flex; align-items: center; justify-content: center; gap: 10px; }
+  header h1 { font-size: 26px; font-weight: 800; letter-spacing: 1px; }
+
+  .card {
+    background: var(--card);
+    border-radius: 24px;
+    padding: 22px;
+    box-shadow: 0 8px 30px rgba(35,35,35,.07);
+  }
+
+  /* 演示时钟标记 */
+  .sim-badge {
+    display: none;
+    align-items: center; justify-content: center; gap: 6px;
+    font-size: 12px; color: var(--rind-dark);
+    background: #E9F7EE; border: 1px dashed var(--rind-dark);
+    border-radius: 999px; padding: 4px 12px; width: fit-content;
+    margin: 0 auto;
+  }
+  .sim-badge.on { display: flex; }
+  .sim-badge .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--rind-dark); animation: blink 1s infinite; }
+  @keyframes blink { 50% { opacity: .2; } }
+
+  /* 主倒计时 */
+  .ring-box { position: relative; width: 300px; height: 300px; margin: 0 auto; }
+  .ring-box svg { width: 100%; height: 100%; }
+  .ring-center {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    text-align: center; padding: 0 34px;
+  }
+  .status-chip {
+    font-size: 13px; font-weight: 700; padding: 4px 14px; border-radius: 999px;
+    background: #FFF0F2; color: var(--flesh); margin-bottom: 10px;
+  }
+  .status-chip.green { background: #E9F7EE; color: var(--rind-dark); }
+  .big-time {
+    font-size: 46px; font-weight: 800; font-variant-numeric: tabular-nums;
+    letter-spacing: 1px; line-height: 1.1;
+  }
+  .big-text { font-size: 30px; font-weight: 800; line-height: 1.3; }
+  .sub-text { font-size: 13px; color: var(--text-dim); margin-top: 10px; }
+
+  .weekend-line { text-align: center; font-size: 15px; margin-top: 14px; font-weight: 600; }
+  .weekend-line b { color: var(--flesh); }
+
+  /* 摸鱼 */
+  .moyu-card { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .moyu-info { font-size: 14px; }
+  .moyu-info b { font-size: 22px; color: var(--rind-dark); font-variant-numeric: tabular-nums; }
+  .btn {
+    border: none; border-radius: 999px; padding: 12px 22px;
+    font-size: 15px; font-weight: 700; cursor: pointer;
+    font-family: inherit; transition: transform .12s ease, box-shadow .12s ease;
+  }
+  .btn:active { transform: scale(.96); }
+  .btn-green { background: var(--rind-dark); color: #fff; box-shadow: 0 4px 14px rgba(31,138,91,.35); }
+  .btn-red { background: var(--flesh); color: #fff; box-shadow: 0 4px 14px rgba(255,93,115,.35); }
+  .btn-ghost { background: #F4F0EA; color: var(--text); box-shadow: none; font-weight: 600; }
+  .moyu-live { color: var(--flesh); font-weight: 700; animation: blink 1.2s infinite; }
+
+  /* Todo */
+  .todo-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px; }
+  .todo-head h2 { font-size: 17px; }
+  .todo-count { font-size: 13px; color: var(--text-dim); }
+  .todo-count b { color: var(--flesh); font-size: 16px; }
+  .todo-add { display: flex; gap: 8px; margin-bottom: 10px; }
+  .todo-add input {
+    flex: 1; border: 1.5px solid #EDE7DE; border-radius: 12px; padding: 10px 12px;
+    font-size: 14px; font-family: inherit; outline: none; background: var(--cream);
+  }
+  .todo-add input:focus { border-color: var(--rind-light); }
+  .todo-add button { border-radius: 12px; padding: 10px 16px; }
+  ul.todo-list { list-style: none; }
+  ul.todo-list li {
+    display: flex; align-items: center; gap: 10px; padding: 10px 4px;
+    border-bottom: 1px solid #F4EFE8; font-size: 14px;
+  }
+  ul.todo-list li:last-child { border-bottom: none; }
+  ul.todo-list li.done .t { text-decoration: line-through; color: var(--text-dim); }
+  ul.todo-list input[type=checkbox] { width: 18px; height: 18px; accent-color: var(--rind-dark); cursor: pointer; }
+  ul.todo-list .t { flex: 1; }
+  ul.todo-list .del { border: none; background: none; color: var(--text-dim); cursor: pointer; font-size: 15px; padding: 2px 6px; }
+  ul.todo-list .del:hover { color: var(--flesh); }
+
+  /* 设置 */
+  details.card { padding: 0; }
+  details summary {
+    list-style: none; cursor: pointer; padding: 18px 22px; font-weight: 700; font-size: 15px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  details summary::after { content: "›"; font-size: 20px; color: var(--text-dim); transition: transform .2s; }
+  details[open] summary::after { transform: rotate(90deg); }
+  .settings-body { padding: 0 22px 20px; display: flex; flex-direction: column; gap: 16px; }
+  .field label { font-size: 13px; color: var(--text-dim); display: block; margin-bottom: 6px; }
+  .time-row { display: flex; gap: 12px; }
+  .time-row .field { flex: 1; }
+  .time-row input {
+    width: 100%; border: 1.5px solid #EDE7DE; border-radius: 12px; padding: 9px 10px;
+    font-size: 15px; font-family: inherit; background: var(--cream); font-variant-numeric: tabular-nums;
+  }
+  .wd-row { display: flex; gap: 6px; }
+  .wd-btn {
+    flex: 1; border: 1.5px solid #EDE7DE; background: var(--cream); border-radius: 10px;
+    padding: 9px 0; font-size: 14px; cursor: pointer; font-family: inherit; color: var(--text-dim);
+  }
+  .wd-btn.on { background: var(--rind-dark); border-color: var(--rind-dark); color: #fff; font-weight: 700; }
+
+  /* 今日特殊 */
+  .override-row { display: flex; flex-wrap: wrap; gap: 8px; }
+  .override-note { font-size: 13px; color: var(--text-dim); }
+  .override-note b { color: var(--flesh); }
+
+  /* 演示时间机 */
+  .demo-panel .grid { display: flex; flex-wrap: wrap; gap: 8px; }
+  .demo-panel h2 { font-size: 15px; margin-bottom: 10px; }
+  .demo-panel .hint { font-size: 12px; color: var(--text-dim); margin-top: 10px; line-height: 1.6; }
+  .chip-btn {
+    border: 1.5px solid #EDE7DE; background: var(--cream); border-radius: 999px;
+    padding: 7px 14px; font-size: 13px; cursor: pointer; font-family: inherit; color: var(--text);
+  }
+  .chip-btn:hover { border-color: var(--rind-light); }
+  .chip-btn.active { background: var(--rind-dark); border-color: var(--rind-dark); color: #fff; }
+
+  footer { text-align: center; font-size: 12px; color: var(--text-dim); margin-top: 8px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <svg width="34" height="34" viewBox="0 0 40 40" aria-hidden="true">
+      <!-- 西瓜切片图标 -->
+      <path d="M4 14 A16 16 0 0 0 36 14 Z" fill="#FF5D73"/>
+      <path d="M4 14 A16 16 0 0 0 36 14" fill="none" stroke="#1F8A5B" stroke-width="4" stroke-linecap="round"/>
+      <ellipse cx="14" cy="19" rx="1.6" ry="2.6" fill="#232323"/>
+      <ellipse cx="20" cy="24" rx="1.6" ry="2.6" fill="#232323"/>
+      <ellipse cx="26" cy="19" rx="1.6" ry="2.6" fill="#232323"/>
+    </svg>
+    <h1>下班啦</h1>
+  </header>
+
+  <div class="sim-badge" id="simBadge"><span class="dot"></span><span id="simBadgeText">演示模式</span></div>
+
+  <!-- 主倒计时卡片 -->
+  <section class="card">
+    <div class="ring-box">
+      <svg viewBox="0 0 300 300">
+        <!-- 瓜皮外圈 -->
+        <circle cx="150" cy="150" r="132" fill="none" stroke="#1F8A5B" stroke-width="7"/>
+        <!-- 瓜皮浅色轨道（剩余时间） -->
+        <circle cx="150" cy="150" r="112" fill="none" stroke="#7BD389" stroke-width="22" opacity="0.35"/>
+        <!-- 摸鱼叠加区段 -->
+        <g id="moyuArcs" transform="rotate(-90 150 150)"></g>
+        <!-- 瓜瓤进度 -->
+        <circle id="progressArc" cx="150" cy="150" r="112" fill="none" stroke="#FF5D73" stroke-width="22"
+                stroke-linecap="round" transform="rotate(-90 150 150)"
+                stroke-dasharray="0 703.7"/>
+        <!-- 西瓜籽 -->
+        <g id="seeds"></g>
+      </svg>
+      <div class="ring-center">
+        <div class="status-chip" id="statusChip">搬砖中</div>
+        <div class="big-time" id="bigTime">--:--:--</div>
+        <div class="sub-text" id="subText"></div>
+      </div>
+    </div>
+    <div class="weekend-line" id="weekendLine"></div>
+  </section>
+
+  <!-- 摸鱼卡片 -->
+  <section class="card moyu-card">
+    <div class="moyu-info">
+      <div id="moyuLabel">今日已摸鱼</div>
+      <div><b id="moyuMinutes">0</b> 分钟 <span id="moyuLive" class="moyu-live" style="display:none">· 摸鱼中</span></div>
+    </div>
+    <button class="btn btn-green" id="moyuBtn">开始摸鱼</button>
+  </section>
+
+  <!-- Todo -->
+  <section class="card">
+    <div class="todo-head">
+      <h2>待办</h2>
+      <div class="todo-count">下班前还有 <b id="todoLeft">0</b> 件事</div>
+    </div>
+    <div class="todo-add">
+      <input id="todoInput" type="text" placeholder="加一件下班前要搞定的事…" maxlength="50">
+      <button class="btn btn-green" id="todoAddBtn">添加</button>
+    </div>
+    <ul class="todo-list" id="todoList"></ul>
+  </section>
+
+  <!-- 今日特殊安排 -->
+  <section class="card">
+    <div class="todo-head"><h2>今日特殊安排</h2><div class="override-note" id="overrideNote">无</div></div>
+    <div class="override-row">
+      <button class="chip-btn" id="ovOvertime">加班 +2 小时</button>
+      <button class="chip-btn" id="ovHoliday">今天放假</button>
+      <button class="chip-btn" id="ovLeave">今天请假</button>
+      <button class="chip-btn" id="ovClear">清除</button>
+    </div>
+  </section>
+
+  <!-- 设置 -->
+  <details class="card">
+    <summary>作息设置</summary>
+    <div class="settings-body">
+      <div class="field">
+        <label>每周工作日</label>
+        <div class="wd-row" id="wdRow"></div>
+      </div>
+      <div class="time-row">
+        <div class="field">
+          <label>上班时间</label>
+          <input type="time" id="startTime" value="09:00">
+        </div>
+        <div class="field">
+          <label>下班时间</label>
+          <input type="time" id="endTime" value="18:00">
+        </div>
+      </div>
+    </div>
+  </details>
+
+  <!-- 演示时间机 -->
+  <section class="card demo-panel">
+    <h2>演示时间机</h2>
+    <div class="grid">
+      <button class="chip-btn" data-sim="mon-morning">周一 08:30</button>
+      <button class="chip-btn" data-sim="wed-noon">周三 13:30</button>
+      <button class="chip-btn" data-sim="fri-1700">周五 17:00</button>
+      <button class="chip-btn" data-sim="fri-night">周五 19:30</button>
+      <button class="chip-btn" data-sim="sat-noon">周六 11:00</button>
+      <button class="chip-btn" data-sim="real">回到真实时间</button>
+    </div>
+    <div class="hint">演示时间会以真实速度继续流逝，方便观察倒计时跳动。<br>试试：切到「周三 13:30」点开始摸鱼；或切到「周五 17:00」再加班 2 小时。</div>
+  </section>
+
+  <footer>下班啦 · 演示原型（数据存在本浏览器 localStorage）</footer>
+</div>
+
+<script>
+"use strict";
+
+/* ================= 状态（对应 Swift 端 AppState） ================= */
+const LS_KEY = "watermelon-demo-v1";
+
+const defaultState = () => ({
+  schedule: { workdays: [2,3,4,5,6], startH: 9, startM: 0, endH: 18, endM: 0 }, // weekday: 1=周日…7=周六
+  overrides: {},   // dayKey -> { type: "overtime"|"holiday"|"leave", minutes?: number }
+  todos: [],       // { id, title, done }
+  moyuSessions: [] // { start: ms, end: ms|null }
+});
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (!raw) return defaultState();
+    const s = JSON.parse(raw);
+    return Object.assign(defaultState(), s);
+  } catch { return defaultState(); }
+}
+function save() { localStorage.setItem(LS_KEY, JSON.stringify(S)); }
+let S = loadState();
+
+/* ================= 演示时钟 ================= */
+// sim = null 表示真实时间；否则 { base: 模拟起点ms, setAt: 真实起点ms }
+let sim = null;
+function now() { return sim ? new Date(sim.base + (Date.now() - sim.setAt)) : new Date(); }
+function setSim(date) { sim = date ? { base: date.getTime(), setAt: Date.now() } : null; renderSimBadge(); }
+
+/* ================= 时间工具 ================= */
+const DAY_MS = 86400000;
+function startOfDay(d) { const x = new Date(d); x.setHours(0,0,0,0); return x; }
+function atTime(day, h, m) { const x = startOfDay(day); x.setHours(h, m, 0, 0); return x; }
+function dayKey(d) {
+  const p = n => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`;
+}
+function fmtHMS(ms) {
+  const t = Math.max(0, Math.round(ms / 1000));
+  const h = Math.floor(t / 3600), m = Math.floor(t % 3600 / 60), s = t % 60;
+  const p = n => String(n).padStart(2, "0");
+  return `${p(h)}:${p(m)}:${p(s)}`;
+}
+
+/* ================= 引擎（镜像 Swift 端 CountdownEngine / WorkdayResolver） ================= */
+function resolveDay(day) {
+  const key = dayKey(day);
+  const ov = S.overrides[key];
+  if (ov && (ov.type === "holiday" || ov.type === "leave")) {
+    return { work: false, reason: ov.type };
+  }
+  const wd = day.getDay() + 1; // JS getDay: 0=周日 -> 1=周日 … 7=周六
+  if (!S.schedule.workdays.includes(wd)) return { work: false, reason: "weekend" };
+
+  const start = atTime(day, S.schedule.startH, S.schedule.startM);
+  let end = atTime(day, S.schedule.endH, S.schedule.endM);
+  if (ov && ov.type === "overtime") end = new Date(end.getTime() + ov.minutes * 60000);
+  // 加班不跨天：截断到当天 23:59:59
+  const limit = new Date(startOfDay(day).getTime() + DAY_MS - 1000);
+  if (end > limit) end = limit;
+  if (end <= start) return { work: false, reason: "weekend" };
+  return { work: true, start, end, key, overtime: !!(ov && ov.type === "overtime") };
+}
+
+function statusAt(t) {
+  const r = resolveDay(t);
+  if (!r.work) return { type: "rest", reason: r.reason };
+  if (t < r.start) return { type: "beforeWork", start: r.start, end: r.end };
+  if (t < r.end)   return { type: "working", start: r.start, end: r.end,
+                            remaining: r.end - t, progress: (t - r.start) / (r.end - r.start) };
+  return { type: "offWork" };
+}
+
+// 周末倒计时：本周（周一起）最后一个工作日下班时刻，已过则顺延下周
+function weekendCountdown(t) {
+  const mon0 = (t.getDay() + 6) % 7; // 距本周一几天
+  for (let w = 0; w < 4; w++) {
+    const weekStart = new Date(startOfDay(t).getTime() + (w * 7 - mon0) * DAY_MS);
+    let lastEnd = null;
+    for (let i = 0; i < 7; i++) {
+      const r = resolveDay(new Date(weekStart.getTime() + i * DAY_MS));
+      if (r.work) lastEnd = r.end;
+    }
+    if (lastEnd && lastEnd > t) return { target: lastEnd, remaining: lastEnd - t };
+  }
+  return null;
+}
+
+function moyuSummary(t) {
+  const ds = startOfDay(t).getTime(), de = ds + DAY_MS;
+  let total = 0, active = false;
+  for (const s of S.moyuSessions) {
+    const end = s.end == null ? t.getTime() : s.end;
+    const a = Math.max(s.start, ds), b = Math.min(end, de);
+    if (b > a) total += b - a;
+    if (s.end == null) active = true;
+  }
+  return { minutes: Math.floor(total / 60000), active };
+}
+
+/* ================= 渲染 ================= */
+const CIRC = 2 * Math.PI * 112; // 瓜瓤圆周
+const $ = id => document.getElementById(id);
+
+// 预生成 12 颗西瓜籽（沿瓜瓤圆周每 30° 一颗）
+const seedsG = $("seeds");
+for (let i = 0; i < 12; i++) {
+  const ang = (-90 + i * 30) * Math.PI / 180;
+  const x = 150 + 112 * Math.cos(ang), y = 150 + 112 * Math.sin(ang);
+  const e = document.createElementNS("http://www.w3.org/2000/svg", "ellipse");
+  e.setAttribute("cx", x); e.setAttribute("cy", y);
+  e.setAttribute("rx", 3); e.setAttribute("ry", 5);
+  e.setAttribute("fill", "#232323");
+  e.setAttribute("transform", `rotate(${i * 30} ${x} ${y})`);
+  e.style.display = "none";
+  seedsG.appendChild(e);
+}
+
+function drawArc(g, fromFrac, toFrac, color) {
+  // 画一段圆弧（fraction 0..1，从 12 点方向顺时针）
+  const r = 112, large = (toFrac - fromFrac) > 0.5 ? 1 : 0;
+  const a0 = fromFrac * 2 * Math.PI, a1 = toFrac * 2 * Math.PI;
+  const x0 = 150 + r * Math.sin(a0), y0 = 150 - r * Math.cos(a0);
+  const x1 = 150 + r * Math.sin(a1), y1 = 150 - r * Math.cos(a1);
+  const p = document.createElementNS("http://www.w3.org/2000/svg", "path");
+  p.setAttribute("d", `M ${x0} ${y0} A ${r} ${r} 0 ${large} 1 ${x1} ${y1}`);
+  p.setAttribute("fill", "none");
+  p.setAttribute("stroke", color);
+  p.setAttribute("stroke-width", "14");
+  g.appendChild(p);
+}
+
+const CHIP_TEXT = {
+  beforeWork: ["还没上班呢", "green"],
+  working: ["搬砖中", ""],
+  offWork: ["已下班", "green"],
+  weekend: ["周末愉快", "green"],
+  holiday: ["今天放假", "green"],
+  leave: ["今天请假", "green"],
+};
+
+function render() {
+  const t = now();
+  const st = statusAt(t);
+  const moyu = moyuSummary(t);
+  const wk = weekendCountdown(t);
+
+  let chipKey = st.type === "rest" ? st.reason : st.type;
+  let progress = 0, bigText = "", subText = "";
+
+  if (st.type === "working") {
+    progress = st.progress;
+    bigText = fmtHMS(st.remaining);
+    subText = `今天 ${fmtHM(st.start)} – ${fmtHM(st.end)}${resolveDay(t).overtime ? "（加班中）" : ""}`;
+  } else if (st.type === "beforeWork") {
+    bigText = fmtHMS(st.start - t);
+    subText = `距离上班 · 今天 ${fmtHM(st.start)} – ${fmtHM(st.end)}`;
+  } else if (st.type === "offWork") {
+    progress = 1;
+    bigText = "已经下班啦";
+    subText = "辛苦了，去享受生活吧";
+  } else {
+    bigText = { weekend: "今天休息", holiday: "放假中", leave: "请假中" }[st.reason] || "今天休息";
+    subText = "不上班的日子，瓜都是甜的";
+  }
+
+  // 芯片
+  const [chipText, chipCls] = CHIP_TEXT[chipKey] || CHIP_TEXT.working;
+  const chip = $("statusChip");
+  chip.textContent = chipKey === "working" && moyu.active ? "摸鱼中" : chipText;
+  chip.className = "status-chip " + (chipCls || "");
+
+  // 大字
+  const big = $("bigTime");
+  if (bigText.includes(":")) { big.className = "big-time"; big.textContent = bigText; }
+  else { big.className = "big-text"; big.textContent = bigText; }
+  $("subText").textContent = subText;
+
+  // 瓜瓤进度
+  $("progressArc").setAttribute("stroke-dasharray", `${progress * CIRC} ${CIRC}`);
+  // 瓜籽随进度出现
+  [...seedsG.children].forEach((e, i) => { e.style.display = (i / 12 < progress - 0.02) ? "" : "none"; });
+
+  // 摸鱼叠加区段（仅工作日工作时段内）
+  const mg = $("moyuArcs");
+  mg.innerHTML = "";
+  const r0 = resolveDay(t);
+  if (r0.work) {
+    for (const s of S.moyuSessions) {
+      const a = Math.max(s.start, r0.start.getTime());
+      const b = Math.min(s.end == null ? t.getTime() : s.end, r0.end.getTime());
+      if (b > a) {
+        drawArc(mg, (a - r0.start) / (r0.end - r0.start), (b - r0.start) / (r0.end - r0.start), "#FFD0D8");
+      }
+    }
+  }
+
+  // 周末倒计时
+  if (wk) {
+    const d = Math.floor(wk.remaining / DAY_MS);
+    const h = Math.floor(wk.remaining % DAY_MS / 3600000);
+    const m = Math.floor(wk.remaining % 3600000 / 60000);
+    $("weekendLine").innerHTML = `距离周末还有 <b>${d > 0 ? d + " 天 " : ""}${h} 小时 ${m} 分</b>`;
+  } else {
+    $("weekendLine").textContent = "这周没有工作日啦";
+  }
+
+  // 摸鱼区
+  $("moyuMinutes").textContent = moyu.minutes;
+  $("moyuLive").style.display = moyu.active ? "" : "none";
+  $("moyuLabel").textContent = moyu.active ? "摸鱼进行中，已摸" : "今日已摸鱼";
+  const btn = $("moyuBtn");
+  btn.textContent = moyu.active ? "继续搬砖" : "开始摸鱼";
+  btn.className = "btn " + (moyu.active ? "btn-red" : "btn-green");
+
+  // 今日特殊安排
+  const ov = S.overrides[dayKey(t)];
+  $("overrideNote").innerHTML = ov
+    ? { overtime: `加班 <b>+${ov.minutes / 60} 小时</b>`, holiday: "<b>放假</b>", leave: "<b>请假</b>" }[ov.type]
+    : "无";
+
+  renderSimBadge();
+}
+
+function fmtHM(d) { const p = n => String(n).padStart(2, "0"); return `${p(d.getHours())}:${p(d.getMinutes())}`; }
+
+function renderSimBadge() {
+  $("simBadge").className = "sim-badge" + (sim ? " on" : "");
+  if (sim) $("simBadgeText").textContent = `演示模式 · 正在模拟 ${fmtSimTime(now())}`;
+}
+function fmtSimTime(d) {
+  const wd = ["日","一","二","三","四","五","六"][d.getDay()];
+  return `周${wd} ${fmtHM(d)}`;
+}
+
+/* ================= Todo ================= */
+function renderTodos() {
+  const ul = $("todoList");
+  ul.innerHTML = "";
+  for (const item of S.todos) {
+    const li = document.createElement("li");
+    if (item.done) li.className = "done";
+    const cb = document.createElement("input");
+    cb.type = "checkbox"; cb.checked = item.done;
+    cb.onchange = () => { item.done = cb.checked; save(); renderTodos(); };
+    const span = document.createElement("span");
+    span.className = "t"; span.textContent = item.title;
+    const del = document.createElement("button");
+    del.className = "del"; del.textContent = "✕";
+    del.onclick = () => { S.todos = S.todos.filter(x => x.id !== item.id); save(); renderTodos(); };
+    li.append(cb, span, del);
+    ul.appendChild(li);
+  }
+  $("todoLeft").textContent = S.todos.filter(x => !x.done).length;
+}
+
+function addTodo() {
+  const v = $("todoInput").value.trim();
+  if (!v) return;
+  S.todos.push({ id: Date.now(), title: v, done: false });
+  $("todoInput").value = "";
+  save(); renderTodos();
+}
+$("todoAddBtn").onclick = addTodo;
+$("todoInput").addEventListener("keydown", e => { if (e.key === "Enter") addTodo(); });
+
+/* ================= 摸鱼按钮 ================= */
+$("moyuBtn").onclick = () => {
+  const t = now();
+  const active = S.moyuSessions.find(s => s.end == null);
+  if (active) active.end = t.getTime();
+  else S.moyuSessions.push({ start: t.getTime(), end: null });
+  save(); render();
+};
+
+/* ================= 今日特殊安排 ================= */
+function setOverride(v) {
+  const key = dayKey(now());
+  if (v) S.overrides[key] = v; else delete S.overrides[key];
+  save(); render();
+}
+$("ovOvertime").onclick = () => setOverride({ type: "overtime", minutes: 120 });
+$("ovHoliday").onclick  = () => setOverride({ type: "holiday" });
+$("ovLeave").onclick    = () => setOverride({ type: "leave" });
+$("ovClear").onclick    = () => setOverride(null);
+
+/* ================= 设置 ================= */
+const WD_LABELS = [["一",2],["二",3],["三",4],["四",5],["五",6],["六",7],["日",1]];
+const wdRow = $("wdRow");
+WD_LABELS.forEach(([label, code]) => {
+  const b = document.createElement("button");
+  b.className = "wd-btn" + (S.schedule.workdays.includes(code) ? " on" : "");
+  b.textContent = label;
+  b.onclick = () => {
+    const i = S.schedule.workdays.indexOf(code);
+    if (i >= 0) S.schedule.workdays.splice(i, 1); else S.schedule.workdays.push(code);
+    b.classList.toggle("on");
+    save(); render();
+  };
+  wdRow.appendChild(b);
+});
+$("startTime").value = `${String(S.schedule.startH).padStart(2,"0")}:${String(S.schedule.startM).padStart(2,"0")}`;
+$("endTime").value   = `${String(S.schedule.endH).padStart(2,"0")}:${String(S.schedule.endM).padStart(2,"0")}`;
+$("startTime").onchange = e => { const [h,m] = e.target.value.split(":").map(Number); S.schedule.startH = h; S.schedule.startM = m; save(); render(); };
+$("endTime").onchange   = e => { const [h,m] = e.target.value.split(":").map(Number); S.schedule.endH = h; S.schedule.endM = m; save(); render(); };
+
+/* ================= 演示时间机 ================= */
+function mondayOfThisWeek(base) {
+  const d = startOfDay(base);
+  return new Date(d.getTime() - ((base.getDay() + 6) % 7) * DAY_MS);
+}
+const SIM_PRESETS = {
+  "mon-morning": b => { const m = mondayOfThisWeek(b); m.setHours(8,30,0,0); return m; },
+  "wed-noon":    b => { const m = mondayOfThisWeek(b); m.setDate(m.getDate()+2); m.setHours(13,30,0,0); return m; },
+  "fri-1700":    b => { const m = mondayOfThisWeek(b); m.setDate(m.getDate()+4); m.setHours(17,0,0,0); return m; },
+  "fri-night":   b => { const m = mondayOfThisWeek(b); m.setDate(m.getDate()+4); m.setHours(19,30,0,0); return m; },
+  "sat-noon":    b => { const m = mondayOfThisWeek(b); m.setDate(m.getDate()+5); m.setHours(11,0,0,0); return m; },
+};
+document.querySelectorAll("[data-sim]").forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll("[data-sim]").forEach(x => x.classList.remove("active"));
+    const key = btn.dataset.sim;
+    if (key === "real") { setSim(null); }
+    else { btn.classList.add("active"); setSim(SIM_PRESETS[key](new Date())); }
+    render();
+  };
+});
+
+/* ================= 主循环 ================= */
+renderTodos();
+render();
+setInterval(render, 250);
+</script>
+</body>
+</html>
