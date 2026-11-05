@@ -30,44 +30,18 @@ jobs:
         run: echo "$TAURI_SIGNING_PRIVATE_KEY" > "$TAURI_SIGNING_PRIVATE_KEY_PATH"
         shell: bash
 
-      - name: Build Tauri App
+      - name: Build Tauri App (conf targets = dmg + app)
         working-directory: widget
         run: |
           npm ci
-          npm run tauri build -- --bundles dmg
+          # 不传 --bundles，让 tauri.conf.json 里的 targets: ["dmg","app"] 生效
+          npm run tauri build
         shell: bash
 
-      - name: DEBUG — Find everything + save to file
-        run: |
-          set +e
-          {
-            echo "=== target/release/bundle tree ==="
-            find widget/src-tauri/target/release/bundle -type f 2>/dev/null | sort
-            echo ""
-            echo "=== all dmg/tar.gz/sig/json under target ==="
-            find widget/src-tauri/target -type f \( -name "*.dmg" -o -name "*.tar.gz" -o -name "*.sig" -o -name "latest*.json" \) 2>/dev/null | sort
-            echo ""
-            echo "=== ALL files under bundle (including dirs) ==="
-            ls -laR widget/src-tauri/target/release/bundle/ 2>/dev/null
-          } | tee bundle-tree.txt
-          echo "done"
+      - name: Print ALL bundle files (debug)
+        run: find widget/src-tauri/target/release/bundle -type f | sort
 
-      - name: Upload bundle-tree.txt as Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: bundle-tree-debug
-          path: bundle-tree.txt
-          if-no-files-found: error
-
-      - name: Upload bundle dir as Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: tauri-bundle-output
-          path: widget/src-tauri/target/release/bundle/
-          if-no-files-found: warn
-        continue-on-error: true
-
-      - name: Collect artifacts into ./release (best-effort)
+      - name: Collect into ./release
         run: |
           set +e
           mkdir -p ./release
@@ -75,34 +49,21 @@ jobs:
 
           echo "=== Copying DMG ==="
           find . -name "*.dmg" -exec cp -v {} ../../../release/ \;
-          echo "=== Copying .app.tar.gz ==="
+          echo "=== Copying .app.tar.gz (updater) ==="
           find . -name "*.app.tar.gz" -exec cp -v {} ../../../release/ \;
-          echo "=== Copying .sig ==="
+          echo "=== Copying .sig (updater) ==="
           find . -name "*.app.tar.gz.sig" -exec cp -v {} ../../../release/ \;
-          echo "=== Copying latest*.json ==="
+          echo "=== Copying latest.json (updater manifest) ==="
           find . -name "latest*.json" -exec cp -v {} ../../../release/ \;
 
           echo ""
-          echo "=== release/ final content ==="
-          ls -lh ../../../release/ 2>/dev/null
-          echo "=== done ==="
-        shell: bash
-        continue-on-error: true
-
-      - name: Upload collected artifacts as Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: collected-release-files
-          path: release/
-          if-no-files-found: warn
-        continue-on-error: true
+          echo "=== release/ final ==="
+          ls -lh ../../../release/
 
       - uses: softprops/action-gh-release@v2
-        if: ${{ always() }}
         with:
           tag_name: ${{ github.ref_name }}
           name: Watermelon ${{ github.ref_name }}
           generate_release_notes: true
           fail_on_unmatched_files: false
-          files: |
-            release/*
+          files: release/*
