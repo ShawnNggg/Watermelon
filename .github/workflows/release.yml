@@ -38,77 +38,24 @@ jobs:
         shell: bash
 
       - name: Collect artifacts + generate latest.json
+        working-directory: .
         run: |
-          set +e
           mkdir -p release
           BUNDLE="widget/src-tauri/target/release/bundle"
-          TAG="${GITHUB_REF_NAME}"
-          REPO="ShawnNggg/-"
 
-          echo "=== Copying files to ./release/ ==="
-          find "$BUNDLE" -name "*.dmg" -type f | while IFS= read -r src; do cp -v "$src" "release/"; done
-          find "$BUNDLE" -name "*.app.tar.gz" -type f | while IFS= read -r src; do cp -v "$src" "release/"; done
-          find "$BUNDLE" -name "*.app.tar.gz.sig" -type f | while IFS= read -r src; do cp -v "$src" "release/"; done
+          echo "=== Copying to ./release/ ==="
+          find "$BUNDLE" -name "*.dmg" -type f | while IFS= read -r s; do cp -v "$s" release/; done
+          find "$BUNDLE" -name "*.app.tar.gz" -type f | while IFS= read -r s; do cp -v "$s" release/; done
+          find "$BUNDLE" -name "*.app.tar.gz.sig" -type f | while IFS= read -r s; do cp -v "$s" release/; done
 
           echo ""
-          echo "=== release/ contents ==="
+          echo "=== release/ after copy ==="
           ls -lh release/
 
           echo ""
-          echo "=== Generating latest.json ==="
-
+          echo "=== Generating latest.json via gen-latest.py ==="
           VERSION=$(python3 -c "import json; print(json.load(open('widget/src-tauri/tauri.conf.json'))['version'])")
-          TARGZ_BASENAME=$(ls release/*.app.tar.gz 2>/dev/null | xargs basename -a 2>/dev/null | head -1)
-          SIG_BASENAME=$(ls release/*.app.tar.gz.sig 2>/dev/null | xargs basename -a 2>/dev/null | head -1)
-
-          echo "Version: $VERSION"
-          echo "tar.gz: $TARGZ_BASENAME"
-          echo "sig: $SIG_BASENAME"
-
-          TARGZ_URL="https://github.com/${REPO}/releases/download/${TAG}/${TARGZ_BASENAME}"
-
-          echo "URL: $TARGZ_URL"
-
-          # export 让 python heredoc 能从 os.environ 读
-          export VERSION TARGZ_URL
-
-          # ====== Python 读取文件生成 JSON（不依赖 bash 内联多行）======
-          python3 << 'PYEOF'
-import json, datetime, os, glob
-
-version = os.environ.get("VERSION")
-targz_url = os.environ.get("TARGZ_URL")
-
-# 读取 .sig 文件
-sig_path = glob.glob("release/*.app.tar.gz.sig")[0] if glob.glob("release/*.app.tar.gz.sig") else ""
-sig_content = ""
-if sig_path and os.path.exists(sig_path):
-    with open(sig_path, 'r') as f:
-        sig_content = f.read().strip()
-    print(f"Signature read from {sig_path} ({len(sig_content)} bytes)")
-else:
-    print("⚠️ No .sig file found!")
-
-now = datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
-
-manifest = {
-    "version": version,
-    "notes": f"Watermelon v{version} auto build",
-    "pub_date": now,
-    "platforms": {
-        "darwin-aarch64": {
-            "signature": sig_content,
-            "url": targz_url
-        }
-    }
-}
-
-with open("release/latest.json", "w") as f:
-    json.dump(manifest, f, indent=2)
-
-print("✅ release/latest.json written")
-print(json.dumps(manifest, indent=2))
-PYEOF
+          python3 scripts/gen-latest.py "$VERSION" "${GITHUB_REF_NAME}" "ShawnNggg/-"
 
           echo ""
           echo "=== final release/ ==="
