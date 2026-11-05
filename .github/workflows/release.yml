@@ -69,6 +69,9 @@ jobs:
 
           echo "URL: $TARGZ_URL"
 
+          # export 让 python heredoc 能从 os.environ 读
+          export VERSION TARGZ_URL
+
           # ====== Python 读取文件生成 JSON（不依赖 bash 内联多行）======
           python3 << 'PYEOF'
 import json, datetime, os, glob
