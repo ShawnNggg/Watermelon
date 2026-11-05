@@ -37,15 +37,29 @@ jobs:
           npm run tauri build -- --bundles dmg
         shell: bash
 
-      - name: DEBUG — List ALL target artifacts
+      - name: DEBUG — Find everything + save to file
         run: |
-          echo "=== target/release/bundle tree ==="
-          find widget/src-tauri/target/release/bundle -type f 2>/dev/null | sort
-          echo ""
-          echo "=== all archive/json files under target ==="
-          find widget/src-tauri/target -type f \( -name "*.dmg" -o -name "*.tar.gz" -o -name "*.sig" -o -name "latest*.json" -o -name "*.json" \) 2>/dev/null | sort
+          set +e
+          {
+            echo "=== target/release/bundle tree ==="
+            find widget/src-tauri/target/release/bundle -type f 2>/dev/null | sort
+            echo ""
+            echo "=== all dmg/tar.gz/sig/json under target ==="
+            find widget/src-tauri/target -type f \( -name "*.dmg" -o -name "*.tar.gz" -o -name "*.sig" -o -name "latest*.json" \) 2>/dev/null | sort
+            echo ""
+            echo "=== ALL files under bundle (including dirs) ==="
+            ls -laR widget/src-tauri/target/release/bundle/ 2>/dev/null
+          } | tee bundle-tree.txt
+          echo "done"
 
-      - name: Upload bundle as Artifact (for debug)
+      - name: Upload bundle-tree.txt as Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: bundle-tree-debug
+          path: bundle-tree.txt
+          if-no-files-found: error
+
+      - name: Upload bundle dir as Artifact
         uses: actions/upload-artifact@v4
         with:
           name: tauri-bundle-output
