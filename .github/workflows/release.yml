@@ -37,23 +37,29 @@ jobs:
           npm run tauri build
         shell: bash
 
-      - name: Upload ALL bundle files as Artifact (see real paths)
-        uses: actions/upload-artifact@v4
-        with:
-          name: full-bundle
-          path: widget/src-tauri/target/release/bundle/
-          if-no-files-found: error
+      - name: Copy ALL artifacts to ./release (simple bash, no find)
+        run: |
+          mkdir -p release
+          BUNDLE="widget/src-tauri/target/release/bundle"
+          echo "=== Locating files in bundle ==="
+          find "$BUNDLE" -maxdepth 4 -type f \( -name "*.dmg" -o -name "*.app.tar.gz" -o -name "*.app.tar.gz.sig" -o -name "latest*.json" \) 2>/dev/null | tee /tmp/all_files.txt
+          echo ""
+          echo "=== Copying to release/ ==="
+          while IFS= read -r f; do
+            if [ -n "$f" ]; then
+              cp -v "$f" release/ 2>/dev/null || cp -v "$f" release/$(basename "$f")
+            fi
+          done < /tmp/all_files.txt
+          echo ""
+          echo "=== release/ final ==="
+          ls -lh release/
 
-      - name: Upload only updater artifacts
+      - name: Upload release/ as Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: updater-files
-          path: |
-            widget/src-tauri/target/release/bundle/**/*.dmg
-            widget/src-tauri/target/release/bundle/**/*.app.tar.gz
-            widget/src-tauri/target/release/bundle/**/*.sig
-            widget/src-tauri/target/release/bundle/**/latest*.json
-          if-no-files-found: warn
+          name: final-release-files
+          path: release/
+          if-no-files-found: error
 
       - uses: softprops/action-gh-release@v2
         with:
@@ -61,9 +67,4 @@ jobs:
           name: Watermelon ${{ github.ref_name }}
           generate_release_notes: true
           fail_on_unmatched_files: false
-          # 直接 glob bundle 目录所有产物（DMG + .app.tar.gz + .sig + latest.json）
-          files: |
-            widget/src-tauri/target/release/bundle/**/*.dmg
-            widget/src-tauri/target/release/bundle/**/*.app.tar.gz
-            widget/src-tauri/target/release/bundle/**/*.sig
-            widget/src-tauri/target/release/bundle/**/latest*.json
+          files: release/*
