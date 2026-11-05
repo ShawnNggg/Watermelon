@@ -30,36 +30,70 @@ jobs:
         run: echo "$TAURI_SIGNING_PRIVATE_KEY" > "$TAURI_SIGNING_PRIVATE_KEY_PATH"
         shell: bash
 
-      - name: Build Tauri App (conf targets = dmg + app)
+      - name: Build Tauri App
         working-directory: widget
         run: |
           npm ci
           npm run tauri build
         shell: bash
 
-      - name: Copy ALL artifacts to ./release (simple bash, no find)
+      - name: Dump ALL bundle paths to file + copy to ./release
         run: |
+          set +e
           mkdir -p release
           BUNDLE="widget/src-tauri/target/release/bundle"
-          echo "=== Locating files in bundle ==="
-          find "$BUNDLE" -maxdepth 4 -type f \( -name "*.dmg" -o -name "*.app.tar.gz" -o -name "*.app.tar.gz.sig" -o -name "latest*.json" \) 2>/dev/null | tee /tmp/all_files.txt
+
+          echo "=== FULL BUNDLE TREE ===" > bundle-list.txt
+          echo "Date: $(date)" >> bundle-list.txt
+          echo "" >> bundle-list.txt
+
+          # dump 所有文件（递归 10 层）
+          find "$BUNDLE" -type f -o -type d 2>/dev/null | sort >> bundle-list.txt
+          echo "" >> bundle-list.txt
+
+          # dump 文件大小
+          echo "=== FILE SIZES ===" >> bundle-list.txt
+          find "$BUNDLE" -type f -exec ls -lh {} \; 2>/dev/null | sort -k9 >> bundle-list.txt
+
+          echo "=== BUNDLE MACOS SUBTREE ===" >> bundle-list.txt
+          ls -laR "$BUNDLE/macos/" 2>/dev/null >> bundle-list.txt
+
+          # ====== 复制所有 updater 相关文件 ======
           echo ""
-          echo "=== Copying to release/ ==="
-          while IFS= read -r f; do
-            if [ -n "$f" ]; then
-              cp -v "$f" release/ 2>/dev/null || cp -v "$f" release/$(basename "$f")
-            fi
-          done < /tmp/all_files.txt
+          echo "=== Copying files to ./release/ ==="
+
+          # 1. DMG
+          find "$BUNDLE" -name "*.dmg" -type f | while IFS= read -r src; do
+            cp -v "$src" "release/" 2>/dev/null
+          done
+
+          # 2. .app.tar.gz (updater installer)
+          find "$BUNDLE" -name "*.app.tar.gz" -type f | while IFS= read -r src; do
+            cp -v "$src" "release/" 2>/dev/null
+          done
+
+          # 3. .sig (signature)
+          find "$BUNDLE" -name "*.app.tar.gz.sig" -type f | while IFS= read -r src; do
+            cp -v "$src" "release/" 2>/dev/null
+          done
+
+          # 4. latest.json / latest-*.json (manifest)
+          find "$BUNDLE" -name "latest*.json" -type f | while IFS= read -r src; do
+            cp -v "$src" "release/" 2>/dev/null
+          done
+
+          # 5. 兜底：复制 .app 目录（以防 tar.gz 没生成）
+          find "$BUNDLE" -name "*.app" -type d | while IFS= read -r src; do
+            echo "Found .app at: $src"
+            echo "  contents: $(ls "$src" 2>/dev/null | head -3)"
+          done >> bundle-list.txt
+
           echo ""
           echo "=== release/ final ==="
-          ls -lh release/
-
-      - name: Upload release/ as Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: final-release-files
-          path: release/
-          if-no-files-found: error
+          ls -lh release/ 2>/dev/null || echo "(release/ is EMPTY)"
+          echo ""
+          echo "=== bundle-list.txt ==="
+          cat bundle-list.txt
 
       - uses: softprops/action-gh-release@v2
         with:
@@ -67,4 +101,6 @@ jobs:
           name: Watermelon ${{ github.ref_name }}
           generate_release_notes: true
           fail_on_unmatched_files: false
-          files: release/*
+          files: |
+            bundle-list.txt
+            release/*
