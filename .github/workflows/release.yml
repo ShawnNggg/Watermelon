@@ -5,12 +5,6 @@ on:
     tags: [ "v*" ]
   workflow_dispatch:
 
-# ⚠️ 首次使用前必须在 GitHub repo Settings → Secrets 里添加：
-#   TAURI_SIGNING_PRIVATE_KEY  → 本地私钥文件 ~/.tauri/watermelon.key 的完整内容
-#   （不是 pubkey，也不是文件路径，是文件里的 base64 那一行）
-# 私钥生成命令： npx tauri signer generate -w ~/.tauri/watermelon.key
-# 生成后 cat ~/.tauri/watermelon.key 把内容粘到 GitHub Secret 里
-
 jobs:
   build-tauri:
     strategy:
@@ -38,6 +32,8 @@ jobs:
 
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
 
       - name: Write signing key to file
         run: echo "$TAURI_SIGNING_PRIVATE_KEY" > "$TAURI_SIGNING_PRIVATE_KEY_PATH"
@@ -47,11 +43,36 @@ jobs:
         working-directory: widget
         run: |
           npm ci
-          npm run tauri build -- --bundles ${{ matrix.bundle }}
+          npm run tauri build -- --bundles ${{ matrix.bundle }} --target ${{ matrix.target }}
         shell: bash
 
-      - name: List artifacts
-        run: find widget/src-tauri/target/release/bundle -type f | sort
+      - name: List ALL bundle artifacts (DEBUG)
+        run: |
+          echo "=== bundle dir tree ==="
+          find widget/src-tauri/target/release/bundle -type f 2>/dev/null | sort
+          echo ""
+          echo "=== ALL files under target/release ==="
+          find widget/src-tauri/target/release -maxdepth 5 -type f \
+            \( -name "*.dmg" -o -name "*.tar.gz" -o -name "*.sig" -o -name "*.json" -o -name "*.app" \) 2>/dev/null | sort
+
+      - name: Collect updater artifacts into ./release
+        run: |
+          mkdir -p ./release
+          cd widget/src-tauri/target/release/bundle
+
+          # 复制所有 DMG
+          find . -name "*.dmg" -exec cp -v {} ../../../release/ \;
+
+          # 复制 macOS updater artifacts (.app.tar.gz + .sig) - 不管子目录
+          find . -name "*.app.tar.gz" -exec cp -v {} ../../../release/ \;
+          find . -name "*.app.tar.gz.sig" -exec cp -v {} ../../../release/ \;
+
+          # 复制 latest.json - 不管子目录
+          find . -name "latest*.json" -exec cp -v {} ../../../release/ \;
+
+          echo ""
+          echo "=== release/ 目录最终内容 ==="
+          ls -lh ../../../release/
 
       - uses: softprops/action-gh-release@v2
         with:
@@ -59,7 +80,4 @@ jobs:
           name: Watermelon ${{ github.ref_name }}
           generate_release_notes: true
           files: |
-            widget/src-tauri/target/release/bundle/dmg/*.dmg
-            widget/src-tauri/target/release/bundle/macos/*.app.tar.gz
-            widget/src-tauri/target/release/bundle/**/latest*.json
-            widget/src-tauri/target/release/bundle/**/*.tar.gz.sig
+            release/*
