@@ -7,14 +7,7 @@ on:
 
 jobs:
   build-tauri:
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - os: macos-latest
-            target: universal-apple-darwin
-            bundle: dmg
-    runs-on: ${{ matrix.os }}
+    runs-on: macos-latest
     permissions:
       contents: write
     env:
@@ -41,35 +34,29 @@ jobs:
         working-directory: widget
         run: |
           npm ci
-          npm run tauri build -- --bundles ${{ matrix.bundle }} --target ${{ matrix.target }}
+          npm run tauri build -- --bundles dmg
         shell: bash
 
-      - name: List ALL bundle artifacts (DEBUG)
+      - name: List ALL bundle artifacts
         run: |
-          echo "=== bundle dir tree ==="
-          find widget/src-tauri/target/release/bundle -type f 2>/dev/null | sort
-          echo ""
-          echo "=== ALL files under target/release ==="
-          find widget/src-tauri/target/release -maxdepth 5 -type f \
-            \( -name "*.dmg" -o -name "*.tar.gz" -o -name "*.sig" -o -name "*.json" -o -name "*.app" \) 2>/dev/null | sort
+          echo "=== bundle dir ==="
+          find widget/src-tauri/target/release/bundle -type f | sort
 
-      - name: Collect updater artifacts into ./release
+      - name: Collect artifacts for Release
         run: |
           mkdir -p ./release
           cd widget/src-tauri/target/release/bundle
 
-          # 复制所有 DMG
+          # DMG
           find . -name "*.dmg" -exec cp -v {} ../../../release/ \;
-
-          # 复制 macOS updater artifacts (.app.tar.gz + .sig) - 不管子目录
+          # macOS updater: .app.tar.gz + .sig
           find . -name "*.app.tar.gz" -exec cp -v {} ../../../release/ \;
           find . -name "*.app.tar.gz.sig" -exec cp -v {} ../../../release/ \;
-
-          # 复制 latest.json - 不管子目录
+          # latest.json
           find . -name "latest*.json" -exec cp -v {} ../../../release/ \;
 
           echo ""
-          echo "=== release/ 目录最终内容 ==="
+          echo "=== release/ final ==="
           ls -lh ../../../release/
 
       - uses: softprops/action-gh-release@v2
@@ -77,5 +64,4 @@ jobs:
           tag_name: ${{ github.ref_name }}
           name: Watermelon ${{ github.ref_name }}
           generate_release_notes: true
-          files: |
-            release/*
+          files: release/*
