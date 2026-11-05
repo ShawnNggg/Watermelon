@@ -41,26 +41,27 @@ jobs:
       - name: Print ALL bundle files (debug)
         run: find widget/src-tauri/target/release/bundle -type f | sort
 
-      - name: Collect into ./release
+      - name: Collect into ./release (never fail)
+        continue-on-error: true
         run: |
-          set +e
           mkdir -p ./release
           cd widget/src-tauri/target/release/bundle
 
           echo "=== Copying DMG ==="
-          find . -name "*.dmg" -exec cp -v {} ../../../release/ \;
-          echo "=== Copying .app.tar.gz (updater) ==="
-          find . -name "*.app.tar.gz" -exec cp -v {} ../../../release/ \;
-          echo "=== Copying .sig (updater) ==="
-          find . -name "*.app.tar.gz.sig" -exec cp -v {} ../../../release/ \;
-          echo "=== Copying latest.json (updater manifest) ==="
-          find . -name "latest*.json" -exec cp -v {} ../../../release/ \;
+          find . -name "*.dmg" -exec cp -v {} ../../../release/ \; || true
+          echo "=== Copying .app.tar.gz ==="
+          find . -name "*.app.tar.gz" -exec cp -v {} ../../../release/ \; || true
+          echo "=== Copying .sig ==="
+          find . -name "*.app.tar.gz.sig" -exec cp -v {} ../../../release/ \; || true
+          echo "=== Copying latest*.json ==="
+          find . -name "latest*.json" -exec cp -v {} ../../../release/ \; || true
 
           echo ""
           echo "=== release/ final ==="
-          ls -lh ../../../release/
+          ls -lh ../../../release/ 2>/dev/null || echo "(empty)"
 
       - uses: softprops/action-gh-release@v2
+        if: ${{ always() }}
         with:
           tag_name: ${{ github.ref_name }}
           name: Watermelon ${{ github.ref_name }}
