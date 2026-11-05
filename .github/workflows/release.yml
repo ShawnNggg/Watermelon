@@ -37,63 +37,84 @@ jobs:
           npm run tauri build
         shell: bash
 
-      - name: Dump ALL bundle paths to file + copy to ./release
+      - name: Collect artifacts + generate latest.json
         run: |
           set +e
           mkdir -p release
           BUNDLE="widget/src-tauri/target/release/bundle"
+          TAG="${GITHUB_REF_NAME}"
+          REPO="ShawnNggg/-"
 
-          echo "=== FULL BUNDLE TREE ===" > bundle-list.txt
-          echo "Date: $(date)" >> bundle-list.txt
-          echo "" >> bundle-list.txt
-
-          # dump 所有文件（递归 10 层）
-          find "$BUNDLE" -type f -o -type d 2>/dev/null | sort >> bundle-list.txt
-          echo "" >> bundle-list.txt
-
-          # dump 文件大小
-          echo "=== FILE SIZES ===" >> bundle-list.txt
-          find "$BUNDLE" -type f -exec ls -lh {} \; 2>/dev/null | sort -k9 >> bundle-list.txt
-
-          echo "=== BUNDLE MACOS SUBTREE ===" >> bundle-list.txt
-          ls -laR "$BUNDLE/macos/" 2>/dev/null >> bundle-list.txt
-
-          # ====== 复制所有 updater 相关文件 ======
-          echo ""
           echo "=== Copying files to ./release/ ==="
-
-          # 1. DMG
-          find "$BUNDLE" -name "*.dmg" -type f | while IFS= read -r src; do
-            cp -v "$src" "release/" 2>/dev/null
-          done
-
-          # 2. .app.tar.gz (updater installer)
-          find "$BUNDLE" -name "*.app.tar.gz" -type f | while IFS= read -r src; do
-            cp -v "$src" "release/" 2>/dev/null
-          done
-
-          # 3. .sig (signature)
-          find "$BUNDLE" -name "*.app.tar.gz.sig" -type f | while IFS= read -r src; do
-            cp -v "$src" "release/" 2>/dev/null
-          done
-
-          # 4. latest.json / latest-*.json (manifest)
-          find "$BUNDLE" -name "latest*.json" -type f | while IFS= read -r src; do
-            cp -v "$src" "release/" 2>/dev/null
-          done
-
-          # 5. 兜底：复制 .app 目录（以防 tar.gz 没生成）
-          find "$BUNDLE" -name "*.app" -type d | while IFS= read -r src; do
-            echo "Found .app at: $src"
-            echo "  contents: $(ls "$src" 2>/dev/null | head -3)"
-          done >> bundle-list.txt
+          # DMG
+          find "$BUNDLE" -name "*.dmg" -type f | while IFS= read -r src; do cp -v "$src" "release/"; done
+          # .app.tar.gz (updater)
+          find "$BUNDLE" -name "*.app.tar.gz" -type f | while IFS= read -r src; do cp -v "$src" "release/"; done
+          # .sig
+          find "$BUNDLE" -name "*.app.tar.gz.sig" -type f | while IFS= read -r src; do cp -v "$src" "release/"; done
 
           echo ""
-          echo "=== release/ final ==="
-          ls -lh release/ 2>/dev/null || echo "(release/ is EMPTY)"
+          echo "=== release/ contents ==="
+          ls -lh release/
+
           echo ""
-          echo "=== bundle-list.txt ==="
-          cat bundle-list.txt
+          echo "=== Generating latest.json ==="
+
+          # 1. 读 version
+          VERSION=$(python3 -c "import json; print(json.load(open('widget/src-tauri/tauri.conf.json'))['version'])")
+          echo "Version: $VERSION"
+
+          # 2. 读 .sig 文件内容
+          SIG_FILE=$(find "$BUNDLE" -name "*.app.tar.gz.sig" -type f | head -1)
+          if [ -f "$SIG_FILE" ]; then
+            SIGNATURE=$(cat "$SIG_FILE")
+            echo "Signature found ($(echo "$SIGNATURE" | wc -c | tr -d ' ') bytes)"
+          else
+            echo "❌ NO SIG FILE FOUND!"
+            SIGNATURE=""
+          fi
+
+          # 3. 确定 tar.gz 文件名
+          TARGZ_FILE=$(find "$BUNDLE" -name "*.app.tar.gz" -type f | head -1)
+          TARGZ_BASENAME=$(basename "$TARGZ_FILE")
+          echo "tar.gz basename: $TARGZ_BASENAME"
+
+          # 4. 构造下载 URL
+          TARGZ_URL="https://github.com/${REPO}/releases/download/${TAG}/${TARGZ_BASENAME}"
+          echo "tar.gz URL: $TARGZ_URL"
+
+          # 5. 写 latest.json
+          python3 << PYEOF
+import json, datetime, os
+
+version = "$VERSION"
+sig = """$SIGNATURE"""
+url = "$TARGZ_URL"
+now = datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+
+manifest = {
+    "version": version,
+    "notes": f"Watermelon v{version} 自动构建",
+    "pub_date": now,
+    "platforms": {
+        "darwin-aarch64": {
+            "signature": sig.strip(),
+            "url": url
+        }
+    }
+}
+
+with open("release/latest.json", "w") as f:
+    json.dump(manifest, f, indent=2)
+
+print("✅ Written release/latest.json")
+print(json.dumps(manifest, indent=2))
+PYEOF
+
+          echo ""
+          echo "=== final release/ ==="
+          ls -lh release/
+          cat release/latest.json
 
       - uses: softprops/action-gh-release@v2
         with:
@@ -101,6 +122,4 @@ jobs:
           name: Watermelon ${{ github.ref_name }}
           generate_release_notes: true
           fail_on_unmatched_files: false
-          files: |
-            bundle-list.txt
-            release/*
+          files: release/*
