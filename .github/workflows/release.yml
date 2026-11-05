@@ -37,31 +37,58 @@ jobs:
           npm run tauri build -- --bundles dmg
         shell: bash
 
-      - name: List ALL bundle artifacts
+      - name: DEBUG — List ALL target artifacts
         run: |
-          echo "=== bundle dir ==="
-          find widget/src-tauri/target/release/bundle -type f | sort
+          echo "=== target/release/bundle tree ==="
+          find widget/src-tauri/target/release/bundle -type f 2>/dev/null | sort
+          echo ""
+          echo "=== all archive/json files under target ==="
+          find widget/src-tauri/target -type f \( -name "*.dmg" -o -name "*.tar.gz" -o -name "*.sig" -o -name "latest*.json" -o -name "*.json" \) 2>/dev/null | sort
 
-      - name: Collect artifacts for Release
+      - name: Upload bundle as Artifact (for debug)
+        uses: actions/upload-artifact@v4
+        with:
+          name: tauri-bundle-output
+          path: widget/src-tauri/target/release/bundle/
+          if-no-files-found: warn
+        continue-on-error: true
+
+      - name: Collect artifacts into ./release (best-effort)
         run: |
+          set +e
           mkdir -p ./release
           cd widget/src-tauri/target/release/bundle
 
-          # DMG
+          echo "=== Copying DMG ==="
           find . -name "*.dmg" -exec cp -v {} ../../../release/ \;
-          # macOS updater: .app.tar.gz + .sig
+          echo "=== Copying .app.tar.gz ==="
           find . -name "*.app.tar.gz" -exec cp -v {} ../../../release/ \;
+          echo "=== Copying .sig ==="
           find . -name "*.app.tar.gz.sig" -exec cp -v {} ../../../release/ \;
-          # latest.json
+          echo "=== Copying latest*.json ==="
           find . -name "latest*.json" -exec cp -v {} ../../../release/ \;
 
           echo ""
-          echo "=== release/ final ==="
-          ls -lh ../../../release/
+          echo "=== release/ final content ==="
+          ls -lh ../../../release/ 2>/dev/null
+          echo "=== done ==="
+        shell: bash
+        continue-on-error: true
+
+      - name: Upload collected artifacts as Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: collected-release-files
+          path: release/
+          if-no-files-found: warn
+        continue-on-error: true
 
       - uses: softprops/action-gh-release@v2
+        if: ${{ always() }}
         with:
           tag_name: ${{ github.ref_name }}
           name: Watermelon ${{ github.ref_name }}
           generate_release_notes: true
-          files: release/*
+          fail_on_unmatched_files: false
+          files: |
+            release/*
