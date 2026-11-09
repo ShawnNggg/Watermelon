@@ -1,0 +1,8 @@
+#!/bin/sh
+# 拒绝作者/提交者身份不是 wuqungd@gmail.com 的提交
+expected="wuqungd@gmail.com"
+author=$(git var GIT_AUTHOR_IDENT 2>/dev/null)
+committer=$(git var GIT_COMMITTER_IDENT 2>/dev/null)
+case "$author" in *"<$expected>"*) ;; *) echo "❌ 提交被拒绝：作者身份必须是 $expected (当前: $author)"; exit 1;; esac
+case "$committer" in *"<$expected>"*) ;; *) echo "❌ 提交被拒绝：提交者身份必须是 $expected (当前: $committer)"; exit 1;; esac
+exit 0

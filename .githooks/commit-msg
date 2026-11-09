@@ -1,0 +1,7 @@
+#!/bin/sh
+# 拒绝包含 Co-authored-by 的提交
+if grep -qi '^co-authored-by:' "$1"; then
+  echo "❌ 提交被拒绝：不允许 Co-authored-by 署名行"
+  exit 1
+fi
+exit 0
