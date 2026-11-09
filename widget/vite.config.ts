@@ -38,6 +38,8 @@ export default defineConfig({
   test: {
     root: ".",
     include: ["src/**/*.test.ts"],
-    environment: "node",
+    // 默认 jsdom（LegacyDogRenderer / WidgetShell 需要 DOM + window.setInterval）
+    // Domain/Behavior 纯逻辑测试加 `// @vitest-environment node` 跳过 jsdom
+    environment: "jsdom",
   },
 });

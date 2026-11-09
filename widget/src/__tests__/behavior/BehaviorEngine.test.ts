@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect, beforeEach } from "vitest";
 import { BehaviorEngine, moodOf } from "@/behavior";
 import type { BehaviorSnapshot, PetAction, Mood } from "@/behavior";
