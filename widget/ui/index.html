@@ -68,8 +68,8 @@
     background: rgba(var(--panel-rgb), .97);
     backdrop-filter: none;
     box-shadow: 0 8px 22px rgba(35,35,35,.2), 0 0 0 1px rgba(255,255,255,.5) inset;
-    /* 高度交给 JS 自适应窗口；超屏时才内部滚动，滚动条永久隐藏 */
-    overflow-y: auto;
+    /* 用 hidden 确保圆角裁切干净；JS autoFit 会把窗口撑到足够大，不需要滚动 */
+    overflow: hidden;
   }
   /* 彻底隐藏滚动条：窗口高度随内容变化，不需要用户滚动 */
   html, body, .widget { scrollbar-width: none; }
@@ -433,8 +433,15 @@
     width: 30px; height: 30px; cursor: pointer; font-size: 14px; color: var(--text-dim);
   }
 
-  /* 抽屉（设置 / 待办） */
-  .drawer { display: none; margin-top: 12px; border-top: 1px dashed var(--line); padding-top: 12px; }
+  /* 抽屉（设置 / 待办）— 圆角内卡片，与主 widget 视觉统一 */
+  .drawer {
+    display: none;
+    margin-top: 10px;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 12px 14px 14px;
+    background: rgba(var(--panel-rgb), .55);
+  }
   .drawer.open { display: block; }
   .drawer h3 { font-size: 13px; margin-bottom: 8px; }
   .field label { font-size: 11.5px; color: var(--text-dim); display: block; margin-bottom: 4px; }
@@ -763,6 +770,16 @@
       <button class="chip-btn" id="ovLeave">请假</button>
       <button class="chip-btn" id="ovClear">清除</button>
     </div>
+    <h3 style="margin-top:12px">📅 日历节假日 <span id="calPermTag" style="font-weight:400;font-size:11px;padding:2px 6px;border-radius:6px;margin-left:4px"></span></h3>
+    <div style="font-size:11.5px;color:var(--text-dim);line-height:1.5;margin:4px 0 8px">
+      订阅「中国法定节假日」后自动识别放假 / 调休补班，无需手动录国务院通知。
+    </div>
+    <div style="display:flex;gap:6px" id="calBtnRow">
+      <button class="chip-btn" id="calGrantBtn" style="flex:1">授权读取日历</button>
+      <button class="chip-btn" id="calRefreshBtn">刷新</button>
+    </div>
+    <div style="font-size:10.5px;color:var(--text-dim);margin-top:4px" id="calInfoLine"></div>
+
     <h3 style="margin-top:12px">皮肤</h3>
     <div class="skin-row" id="skinRow"></div>
   </div>
@@ -962,6 +979,102 @@ async function refreshHolidayYear(year) {
   if (typeof render === "function") render();
 })();
 
+/* ============ 本地日历（macOS Calendar.app 读取） ============
+ * 依赖：用户在系统设置里给 Watermelon 授权日历权限
+ * 依赖：用户的 Calendar.app 里订阅了「中国法定节假日」日历（iCloud 日历列表里一键订阅）
+ *
+ * 判定规则：
+ *   日历标题包含 "假" / "日" / "holiday" 关键字 → isOffDay=true
+ *   日历标题包含 "班" / "补" / "调" / "workday" → isOffDay=false（调休补班）
+ *   标题包含 both 关键词 → isOffDay=true（休假优先）
+ *   用户自己的会议 / 日程（title 不含节假日关键词）→ 忽略
+ *
+ * 优先级：calendar 源 > holiday API 离线源 > workdays.includes
+ */
+const CAL_CACHE_KEY = "watermelon-widget-cal-";
+let CAL_MAP = {};   // { "YYYY-MM-DD": { name, isOffDay, source: "calendar" } }
+let CAL_PERM = localStorage.getItem("watermelon-widget-cal-perm");  // "granted" | "denied" | null
+
+const CAL_HOLIDAY_KEYWORDS = ["假", "法定", "节日", "除夕", "holiday", "Holiday", "日"];
+const CAL_WORKDAY_KEYWORDS = ["班", "补", "调", "调休", "workday", "Workday"];
+
+async function requestCalendarPermission() {
+  if (!window.__TAURI__) return "unsupported";
+  try {
+    const status = await __TAURI__.core.invoke("grant_calendar_permission");
+    CAL_PERM = status;
+    localStorage.setItem("watermelon-widget-cal-perm", status);
+    if (status === "granted") await refreshCalendarEvents();
+    return status;
+  } catch (e) {
+    // permission_denied → 用户没在系统设置给权限
+    CAL_PERM = String(e).includes("permission_denied") ? "denied" : "error";
+    localStorage.setItem("watermelon-widget-cal-perm", CAL_PERM);
+    return CAL_PERM;
+  }
+}
+
+async function refreshCalendarEvents() {
+  if (!window.__TAURI__) return null;
+  const now = new Date();
+  const y = now.getFullYear();
+  const start = `${y - 1}-01-01`;
+  const end = `${y + 2}-12-31`;  // 多预拉一年
+  try {
+    const raw = await __TAURI__.core.invoke("get_calendar_events", { startDate: start, endDate: end });
+    const events = JSON.parse(raw || "[]");
+    const map = {};
+    for (const ev of events) {
+      const title = (ev.title || "").trim();
+      if (!title) continue;
+      const isHoliday = CAL_HOLIDAY_KEYWORDS.some(k => title.includes(k));
+      const isWorkday = CAL_WORKDAY_KEYWORDS.some(k => title.includes(k));
+      if (!isHoliday && !isWorkday) continue;  // 用户日程，跳过
+      let isOffDay = isHoliday && !isWorkday;
+      // 标题同时包含节假日和补班关键词 → 休假优先（如"国庆放假 补班"这种少见情况）
+      map[ev.date] = {
+        name: title.split(/[，,·]/)[0] || title,  // 取逗号前第一个词当简称
+        isOffDay,
+        source: "calendar",
+      };
+    }
+    CAL_MAP = map;
+    localStorage.setItem(CAL_CACHE_KEY + y, JSON.stringify({ fetchedAt: Date.now(), data: map }));
+    // 合并到 HOLIDAY_MAP（calendar 覆盖离线 holiday）
+    const merged = { ...HOLIDAY_MAP };
+    for (const [k, v] of Object.entries(map)) merged[k] = v;
+    HOLIDAY_MAP = merged;
+    if (typeof render === "function") render();
+    console.log(`📅 Calendar: 从 Calendar.app 读到 ${Object.keys(map).length} 个节假日事件`);
+    return map;
+  } catch (e) {
+    if (String(e).includes("permission_denied")) {
+      CAL_PERM = "denied";
+      localStorage.setItem("watermelon-widget-cal-perm", "denied");
+    }
+    return null;
+  }
+}
+
+// 启动时先读缓存，后台异步刷新
+(function initCalendarFromCache() {
+  const y = new Date().getFullYear();
+  const raw = localStorage.getItem(CAL_CACHE_KEY + y);
+  if (raw) {
+    try {
+      const parsed = JSON.parse(raw);
+      CAL_MAP = parsed.data || {};
+      for (const [k, v] of Object.entries(CAL_MAP)) HOLIDAY_MAP[k] = v;
+    } catch {}
+  }
+})();
+// 后台异步读 Calendar（不阻塞启动）
+(async function asyncCalendarRefresh() {
+  if (CAL_PERM === "granted" || CAL_PERM === null) {
+    await refreshCalendarEvents();
+  }
+})();
+
 
 /* ============ 皮肤系统 ============ */
 // 皮肤 = 一组 CSS 变量覆盖。新增皮肤只要在 SKINS 里加一项，不用改别处。
@@ -1064,6 +1177,77 @@ function syncSkinUI() {
     b.onclick = () => applySkin(sk.id);
     row.appendChild(b);
   });
+}
+
+function syncCalUI() {
+  const tag = $("calPermTag");
+  const grantBtn = $("calGrantBtn");
+  const refreshBtn = $("calRefreshBtn");
+  const infoLine = $("calInfoLine");
+  if (!tag || !grantBtn) return;
+
+  const perm = CAL_PERM || null;
+  const calCount = Object.keys(CAL_MAP || {}).length;
+
+  // 状态标签
+  if (perm === "granted") {
+    tag.textContent = "✅ 已授权";
+    tag.style.background = "rgba(95,184,106,.18)";
+    tag.style.color = "#2E7D52";
+  } else if (perm === "denied") {
+    tag.textContent = "❌ 未授权";
+    tag.style.background = "rgba(255,93,115,.15)";
+    tag.style.color = "#D63E54";
+  } else {
+    tag.textContent = "未设置";
+    tag.style.background = "rgba(0,0,0,.06)";
+    tag.style.color = "var(--text-dim)";
+  }
+
+  // 主按钮文字
+  if (perm === "granted") {
+    grantBtn.textContent = "重新授权";
+    grantBtn.style.display = "none";  // 已授权隐藏，只留刷新
+  } else {
+    grantBtn.style.display = "";
+    grantBtn.textContent = perm === "denied" ? "重新请求授权" : "授权读取日历";
+  }
+  refreshBtn.style.display = perm === "granted" ? "" : "none";
+
+  // 信息行
+  if (perm === "granted" && calCount > 0) {
+    infoLine.innerHTML = `📅 Calendar.app 已读取 <b>${calCount}</b> 条节假日事件`;
+  } else if (perm === "granted" && calCount === 0) {
+    infoLine.innerHTML = "⚠️ 已授权但没读到节假日事件 — 去 Calendar.app 订阅「中国法定节假日」试试";
+  } else if (perm === "denied") {
+    infoLine.innerHTML = "需要在「系统设置 → 隐私与安全性 → 日历」里给 Watermelon 权限";
+  } else {
+    infoLine.innerHTML = "授权后自动从 Calendar.app 读取，无需联网 API";
+  }
+
+  // 绑定事件（只绑一次）
+  if (!grantBtn._calBound) {
+    grantBtn.onclick = async () => {
+      grantBtn.textContent = "请求权限中…";
+      const status = await requestCalendarPermission();
+      if (status === "granted") {
+        grantBtn.textContent = "✅ 已授权";
+      } else if (status === "denied") {
+        grantBtn.textContent = "❌ 去系统设置";
+      }
+      syncCalUI();
+    };
+    grantBtn._calBound = true;
+  }
+  if (!refreshBtn._calBound) {
+    refreshBtn.onclick = async () => {
+      refreshBtn.textContent = "刷新中…";
+      await refreshCalendarEvents();
+      refreshBtn.textContent = "刷新";
+      syncCalUI();
+    };
+    refreshBtn._calBound = true;
+  }
 }
 
 /* ============ 窗口高度自适应 ============ */
@@ -1595,6 +1779,7 @@ function syncSettingsUI() {
     b.onclick = () => { S.otRate = Number(b.dataset.rate); save(); syncSettingsUI(); render(); };
   });
   syncSkinUI();
+  syncCalUI();
 }
 $("startTime").onchange = e => { const [h,m] = e.target.value.split(":").map(Number); S.schedule.startH=h; S.schedule.startM=m; save(); render(); };
 $("endTime").onchange = e => { const [h,m] = e.target.value.split(":").map(Number); S.schedule.endH=h; S.schedule.endM=m; save(); render(); };
@@ -1662,7 +1847,23 @@ const OB_STEPS = [
       <button class="seg-btn" data-rate="2">2×</button>
       <button class="seg-btn" data-rate="3">3×</button>
     </div>
-    <div class="ob-actions"><button class="main-btn" id="obDone">开整！</button></div>`,
+    <div class="ob-actions"><button class="main-btn" id="obNext">下一步</button></div>`,
+  () => `
+    <h2>读取你的日历？</h2>
+    <div class="ob-sub" style="line-height:1.55">
+      如果你在 Mac 日历里订阅了「中国法定节假日」，我就能自动识别<br>
+      <b>法定放假（春节/国庆不上班）</b>和<b>调休补班（周六补班）</b> ——<br>
+      不用手动录国务院通知，也不需要联网。
+    </div>
+    <div style="background:var(--bubble); border-radius:12px; padding:10px 12px; font-size:12px; margin-top:6px; line-height:1.6;">
+      📅 怎么订阅中国法定节假日日历：<br>
+      ① 打开 Mac「日历」App → 菜单栏「日历」→「添加订阅日历」<br>
+      ② 在系统设置 → 日历 → 日历权限里给 Watermelon ✅
+    </div>
+    <div class="ob-actions" style="justify-content:space-between; gap:8px">
+      <button class="ob-skip" id="obSkipCal">暂时不要</button>
+      <button class="main-btn" id="obCalGrant" style="flex:1">授权读取日历 →</button>
+    </div>`,
 ];
 let obStep = 0, obRate = 0, obRest = "double";
 function showOb() {
@@ -1694,8 +1895,33 @@ function showOb() {
         b.classList.add("on"); obRate = Number(b.dataset.rate);
       };
     });
-    $("obDone").onclick = () => {
-      S.otRate = obRate; S.onboarded = true; save();
+    $("obNext").onclick = () => {
+      S.otRate = obRate; save(); obStep++; showOb();
+    };
+    return;
+  }
+
+  if (obStep === 4) {
+    // 日历授权 — 可选步
+    const grant = $("obCalGrant");
+    const skip = $("obSkipCal");
+    grant.onclick = async () => {
+      $("obCalGrant").textContent = "请求权限中…";
+      const status = await requestCalendarPermission();
+      if (status === "granted") {
+        $("obCalGrant").textContent = "✅ 已授权";
+      } else if (status === "denied") {
+        $("obCalGrant").textContent = "❌ 未授权（系统设置里改）";
+      } else if (status === "unsupported") {
+        $("obCalGrant").textContent = "浏览器预览不支持";
+      }
+      setTimeout(() => {
+        S.onboarded = true; save();
+        $("onboarding").classList.remove("show"); render();
+      }, 1200);
+    };
+    skip.onclick = () => {
+      S.onboarded = true; save();
       $("onboarding").classList.remove("show"); render();
     };
     return;

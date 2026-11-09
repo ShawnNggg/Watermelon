@@ -40,7 +40,13 @@
     ],
     "category": "public.app-category.productivity",
     "shortDescription": "下班啦 — 打工人桌面挂件",
-    "createUpdaterArtifacts": true
+    "createUpdaterArtifacts": true,
+    "macOS": {
+      "exceptionDomain": "",
+      "entitlements": null,
+      "frameworks": [],
+      "minimumSystemVersion": ""
+    }
   },
   "plugins": {
     "updater": {

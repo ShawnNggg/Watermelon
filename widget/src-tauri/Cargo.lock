@@ -4283,6 +4283,7 @@ name = "watermelon-widget"
 version = "0.1.0"
 dependencies = [
  "png 0.17.16",
+ "regex",
  "serde",
  "serde_json",
  "tauri",
