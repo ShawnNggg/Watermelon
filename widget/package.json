@@ -18,8 +18,13 @@
     "@tauri-apps/cli": "^2",
     "@types/node": "^20.19.43",
     "@vitejs/plugin-basic-ssl": "^1",
+    "jsdom": "^31.0.0",
     "typescript": "^5.6",
     "vite": "^5.4",
     "vitest": "^2"
+  },
+  "dependencies": {
+    "@rive-app/canvas": "^2.49.4",
+    "@tauri-apps/plugin-store": "^2.5.0"
   }
 }

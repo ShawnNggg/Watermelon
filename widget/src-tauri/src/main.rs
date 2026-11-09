@@ -14,6 +14,8 @@ const TRAY_ICON_BYTES: &[u8] = include_bytes!("../icons/icon.png");
 
 fn main() {
     tauri::Builder::default()
+        // tauri-plugin-store — 前端持久化（localStorage 的 Rust 端等价）
+        .plugin(tauri_plugin_store::Builder::new().build())
         // 开机自启：macOS 用 LaunchAgent（不在"登录项"里露脸，纯后台）
         .plugin(tauri_plugin_autostart::init(
             tauri_plugin_autostart::MacosLauncher::LaunchAgent,
