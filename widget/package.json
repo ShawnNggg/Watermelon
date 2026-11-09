@@ -2,12 +2,24 @@
   "name": "watermelon-widget",
   "private": true,
   "version": "0.1.0",
+  "type": "module",
   "scripts": {
+    "dev": "vite dev",
+    "build": "vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "tauri": "tauri",
-    "dev": "tauri dev",
-    "build": "tauri build"
+    "tauri:dev": "tauri dev",
+    "tauri:build": "tauri build"
   },
   "devDependencies": {
-    "@tauri-apps/cli": "^2"
+    "@tauri-apps/cli": "^2",
+    "@types/node": "^20.19.43",
+    "@vitejs/plugin-basic-ssl": "^1",
+    "typescript": "^5.6",
+    "vite": "^5.4",
+    "vitest": "^2"
   }
 }

@@ -16,6 +16,10 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-store/
 
+# Vite / TS 输出
+widget/dist/
+widget/dist-ts/
+
 # Tauri / 本地签名密钥（绝对不能 commit！）
 src-tauri/*.key
 src-tauri/*.key.pub
