@@ -12,9 +12,16 @@ declare global {
         invoke?: (cmd: string, args?: Record<string, unknown>) => Promise<unknown>;
       };
       event?: {
-        listen?: (event: string, handler: (payload: unknown) => void) => Promise<{ id: number }>;
+        listen?: (event: string, handler: (e: { payload: any }) => void) => Promise<{ id: number }>;
         unlisten?: (id: number) => Promise<void>;
         emit?: (event: string, payload?: unknown) => Promise<void>;
+      };
+      plugin?: {
+        updater?: {
+          check: () => Promise<{ version: string } | null>;
+          onUpdaterEvent: (cb: (event: any) => void) => Promise<() => void>;
+          download_and_install: () => Promise<void>;
+        };
       };
       window?: {
         getCurrent?: () => {

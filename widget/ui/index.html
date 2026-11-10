@@ -72,8 +72,12 @@
     overflow: hidden;
   }
   /* 彻底隐藏滚动条：窗口高度随内容变化，不需要用户滚动 */
-  html, body, .widget { scrollbar-width: none; }
-  body::-webkit-scrollbar, .widget::-webkit-scrollbar { width: 0; height: 0; }
+  html, body, .widget, .w-scroll { scrollbar-width: none; }
+  body::-webkit-scrollbar, .widget::-webkit-scrollbar, .w-scroll::-webkit-scrollbar { width: 0; height: 0; }
+  /* 内容超过屏幕高度时：外层保持圆角裁切，内层滚动 */
+  body.in-app .widget { display: flex; flex-direction: column; }
+  .w-scroll { display: flex; flex-direction: column; min-height: 0; }
+  body.in-app.capped .w-scroll { flex: 1 1 auto; overflow-y: auto; overscroll-behavior: contain; }
   body.in-app .drag-bar { display: block; height: 10px; margin: -6px -12px 2px; cursor: grab; }
   body.in-app .drag-bar:active { cursor: grabbing; }
   body.in-app .bubble { font-size: 11px; min-height: 0; height: 28px; padding: 2px 9px; line-height: 1.4; cursor: grab; overflow: hidden; }
@@ -289,6 +293,138 @@
   .widget[data-act="sleep"] .breath-lie { transform-origin: 50% 100%; animation: sleepBreathe 3.4s ease-in-out infinite; }
   @keyframes sleepBreathe { 0%,100% { transform: scale(1,1); } 50% { transform: scale(1.035,.96); } }
   .widget[data-act="sleep"] .tail-lie { transform-origin: 0% 50%; animation: wag 3s ease-in-out infinite alternate; }
+
+  /* ============ 新增动作（25 动作库） ============ */
+  /* 喝咖啡 */
+  .widget[data-act="coffee"] .prop-coffee { opacity: 1; }
+  .widget[data-act="coffee"] .paw-r { opacity: 0; }
+  .widget[data-act="coffee"] .head { animation: sip 3.4s ease-in-out infinite; }
+  @keyframes sip { 0%,55%,100% { transform: rotate(0) translateY(0); } 70% { transform: rotate(-4deg) translateY(3px); } 85% { transform: rotate(0) translateY(0); } }
+  .widget[data-act="coffee"] .steam { animation: steamUp 2.2s ease-in-out infinite; }
+  @keyframes steamUp { 0% { opacity: 0; transform: translateY(2px); } 40% { opacity: .9; } 100% { opacity: 0; transform: translateY(-8px); } }
+  .widget[data-act="coffee"] .steam.s2 { animation-delay: 1.1s; }
+
+  /* 伸懒腰 */
+  .widget[data-act="stretch"] .breath { animation: stretchUp 4.2s ease-in-out infinite; }
+  @keyframes stretchUp { 0%,55%,100% { transform: scale(1,1); } 70%,82% { transform: scale(.98,1.06) translateY(-3px); } }
+  .widget[data-act="stretch"] .paw-l { animation: stretchL 4.2s ease-in-out infinite; }
+  .widget[data-act="stretch"] .paw-r { animation: stretchR 4.2s ease-in-out infinite; }
+  @keyframes stretchL { 0%,55%,100% { transform: translate(0,0); } 70%,82% { transform: translate(8px,-16px); } }
+  @keyframes stretchR { 0%,55%,100% { transform: translate(0,0); } 70%,82% { transform: translate(-8px,-16px); } }
+  .widget[data-act="stretch"] .eye { animation: none; transform: scaleY(.35); }
+  .widget[data-act="stretch"] .tail { animation-duration: 1.8s; }
+
+  /* 发呆想不明白 */
+  .widget[data-act="think"] .think-mark { opacity: 1; animation: markFloat 3s ease-in-out infinite; }
+  @keyframes markFloat { 0%,100% { transform: translateY(0) scale(.9); opacity: .5; } 50% { transform: translateY(-4px) scale(1.1); opacity: 1; } }
+  .widget[data-act="think"] .gaze { transform: translate(3px,-3px); }
+  .widget[data-act="think"] .head { animation: tiltThink 4.5s ease-in-out infinite; }
+  @keyframes tiltThink { 0%,100% { transform: rotate(0); } 35% { transform: rotate(-8deg); } 70% { transform: rotate(6deg); } }
+
+  /* 看文档 */
+  .widget[data-act="read"] .prop-book { opacity: 1; }
+  .widget[data-act="read"] .paw-l, .widget[data-act="read"] .paw-r { opacity: 0; }
+  .widget[data-act="read"] .head { animation: readBob 3.6s ease-in-out infinite; }
+  @keyframes readBob { 0%,100% { transform: rotate(0) translateY(2px); } 50% { transform: rotate(0) translateY(5px); } }
+  .widget[data-act="read"] .gaze { transform: translateY(3px); }
+  .widget[data-act="read"] .tail { animation-duration: 2.2s; }
+
+  /* 记笔记 */
+  .widget[data-act="write"] .prop-paper { opacity: 1; }
+  .widget[data-act="write"] .paw-l { opacity: 0; }
+  .widget[data-act="write"] .paw-r { animation: writeTap .6s ease-in-out infinite alternate; }
+  @keyframes writeTap { from { transform: translate(-2px,-2px); } to { transform: translate(3px,1px); } }
+  .widget[data-act="write"] .gaze { transform: translate(1px,3px); }
+
+  /* 听歌 */
+  .widget[data-act="music"] .prop-notes { opacity: 1; }
+  .widget[data-act="music"] .note { animation: noteFloat 2.6s ease-in-out infinite; }
+  .widget[data-act="music"] .note.n2 { animation-delay: 1.2s; }
+  @keyframes noteFloat { 0% { opacity: 0; transform: translate(0,6px) scale(.7); } 30% { opacity: 1; } 100% { opacity: 0; transform: translate(8px,-16px) scale(1.1); } }
+  .widget[data-act="music"] .head { animation: groove 1.1s ease-in-out infinite; }
+  @keyframes groove { 0%,100% { transform: rotate(-2deg); } 50% { transform: rotate(2deg); } }
+  .widget[data-act="music"] .tail { animation-duration: .55s; }
+
+  /* 开会 */
+  .widget[data-act="meeting"] .prop-bubbles { opacity: 1; }
+  .widget[data-act="meeting"] .jaw { transform-origin: 50% 0%; animation: talk .5s ease-in-out infinite; }
+  .widget[data-act="meeting"] .head { animation: presentBob 3.2s ease-in-out infinite; }
+  .widget[data-act="meeting"] .paw-r { animation: raisePaw 4s ease-in-out infinite; }
+  @keyframes raisePaw { 0%,60%,100% { transform: translate(0,0); } 72%,84% { transform: translate(-10px,-18px); } }
+
+  /* 叹气 */
+  .widget[data-act="sigh"] .sigh-mark { opacity: 1; animation: sighFloat 3.8s ease-in-out infinite; }
+  @keyframes sighFloat { 0%,20% { opacity: 0; transform: translateY(0); } 35%,75% { opacity: .9; transform: translateY(-6px); } 100% { opacity: 0; transform: translateY(-12px); } }
+  .widget[data-act="sigh"] .head { animation: droop 3.8s ease-in-out infinite; }
+  @keyframes droop { 0%,100% { transform: translateY(0); } 40%,70% { transform: translateY(4px); } }
+  .widget[data-act="sigh"] .tail { animation: none; transform: rotate(-30deg); }
+
+  /* 疯狂赶工 */
+  .widget[data-act="crunch"] .prop-laptop { opacity: 1; }
+  .widget[data-act="crunch"] .paw-l { animation: tapL .18s ease-in-out infinite alternate; }
+  .widget[data-act="crunch"] .paw-r { animation: tapR .18s ease-in-out infinite alternate .09s; }
+  .widget[data-act="crunch"] .sweat { opacity: 1; animation: sweatDrop 1.1s ease-in infinite; }
+  .widget[data-act="crunch"] .sweat.s2 { animation-delay: .55s; }
+  .widget[data-act="crunch"] .head { animation: panicHead .32s ease-in-out infinite alternate; }
+  @keyframes panicHead { from { transform: rotate(-2deg); } to { transform: rotate(2deg); } }
+  .widget[data-act="crunch"] .tail { animation-duration: .25s; }
+
+  /* 绝望发呆 */
+  .widget[data-act="despair"] .prop-rain { opacity: 1; }
+  .widget[data-act="despair"] .drop { animation: rainFall 1.2s linear infinite; }
+  .widget[data-act="despair"] .drop.d2 { animation-delay: .4s; }
+  .widget[data-act="despair"] .drop.d3 { animation-delay: .8s; }
+  @keyframes rainFall { 0% { opacity: 0; transform: translateY(0); } 25% { opacity: 1; } 100% { opacity: 0; transform: translateY(10px); } }
+  .widget[data-act="despair"] .head { animation: droop 4.5s ease-in-out infinite; }
+  .widget[data-act="despair"] .eye { animation: none; transform: scaleY(.45); }
+  .widget[data-act="despair"] .tail { animation: none; transform: rotate(-38deg); }
+
+  /* 刷手机 */
+  .widget[data-act="scroll"] .prop-scroll { opacity: 1; }
+  .widget[data-act="scroll"] .paw-l, .widget[data-act="scroll"] .paw-r { opacity: 0; }
+  .widget[data-act="scroll"] .gaze { transform: translateY(3px); }
+  .widget[data-act="scroll"] .head { animation: phoneGlow 3.2s ease-in-out infinite; }
+  @keyframes phoneGlow { 0%,100% { transform: rotate(0) translateY(2px); } 50% { transform: rotate(1.5deg) translateY(3px); } }
+  .widget[data-act="scroll"] .tail { animation-duration: 1.6s; }
+
+  /* 偷吃零食 */
+  .widget[data-act="snack"] .prop-snack { opacity: 1; }
+  .widget[data-act="snack"] .paw-l { opacity: 0; }
+  .widget[data-act="snack"] .jaw { transform-origin: 50% 0%; animation: chew .7s ease-in-out infinite; }
+  .widget[data-act="snack"] .head { animation: nom 1.4s ease-in-out infinite; }
+  .widget[data-act="snack"] .gaze { transform: translate(-2px,2px); }
+
+  /* 趴桌小睡 */
+  .widget[data-act="nap"] .dog-sit { opacity: 0; }
+  .widget[data-act="nap"] .dog-lie { opacity: 1; }
+  .widget[data-act="nap"] .zzz { opacity: 1; animation: zfloat 2.6s ease-in-out infinite; }
+  .widget[data-act="nap"] .zzz.z2 { animation-delay: .9s; font-size: 15px; }
+  .widget[data-act="nap"] .zzz.z3 { animation-delay: 1.8s; font-size: 18px; }
+  .widget[data-act="nap"] .breath-lie { transform-origin: 50% 100%; animation: sleepBreathe 3.8s ease-in-out infinite; }
+
+  /* 开心跳舞 */
+  .widget[data-act="dance"] .breath { animation: danceHop .7s cubic-bezier(.36,0,.64,1) infinite; }
+  @keyframes danceHop {
+    0%,100% { transform: translateY(0) rotate(-3deg) scale(1,1); }
+    25% { transform: translateY(-10px) rotate(3deg) scale(.98,1.02); }
+    50% { transform: translateY(0) rotate(-2deg) scale(1.03,.97); }
+    75% { transform: translateY(-6px) rotate(2deg) scale(1,1); }
+  }
+  .widget[data-act="dance"] .head { animation: shake .6s ease-in-out infinite; }
+  .widget[data-act="dance"] .tail { animation-duration: .18s; }
+  .widget[data-act="dance"] .heart { opacity: 1; animation: floatUp 1.4s ease-out infinite; }
+  .widget[data-act="dance"] .heart.h2 { animation-delay: .45s; }
+  .widget[data-act="dance"] .heart.h3 { animation-delay: .9s; }
+  .widget[data-act="dance"] .ear-l { animation: flapL .6s ease-in-out infinite; }
+  .widget[data-act="dance"] .ear-r { animation: flapR .6s ease-in-out infinite; }
+
+  /* 摇尾巴庆祝 */
+  .widget[data-act="wag"] .tail { animation: wagFast .14s ease-in-out infinite alternate; }
+  @keyframes wagFast { from { transform: rotate(-22deg); } to { transform: rotate(28deg); } }
+  .widget[data-act="wag"] .head { animation: shake 1.1s ease-in-out infinite; }
+  .widget[data-act="wag"] .tongue { opacity: 1; }
+  .widget[data-act="wag"] .heart { opacity: 1; animation: floatUp 1.8s ease-out infinite; }
+  .widget[data-act="wag"] .heart.h2 { animation-delay: .6s; }
 
   /* 中部：倒计时 */
   .count-row { text-align: center; margin-top: 2px; }
@@ -532,10 +668,13 @@
 
   <div class="drag-bar" data-tauri-drag-region title="按住拖动窗口"></div>
 
+  <!-- 滚动容器：窗口触顶时内部滚动，圆角仍由外层 .widget 负责裁切 -->
+  <div class="w-scroll" id="wScroll">
+
   <div class="pet-row">
     <div class="bubble" id="bubble" data-tauri-drag-region>…</div>
     <!-- 小狗桌宠：爱吃西瓜的奶油色小狗（坐姿/站姿/蹲坑/趴睡四形态） -->
-    <svg class="dog" viewBox="0 0 160 150" id="dogSvg" title="点我摸鱼">
+    <svg class="dog" viewBox="0 0 160 150" id="dogSvg" title="点我换个动作">
       <!-- 坐姿形态 -->
       <g class="dog-sit">
         <path class="tail" d="M118 104 Q 138 96 140 78" fill="none" stroke="var(--dog-ear)" stroke-width="9" stroke-linecap="round"/>
@@ -590,6 +729,60 @@
             <ellipse cx="54" cy="120" rx="1.4" ry="2.2" fill="var(--seed)"/>
             <ellipse cx="31" cy="112" rx="7" ry="5.5" fill="var(--dog-body)" stroke="var(--dog-line)" stroke-width="1.2"/>
             <ellipse cx="63" cy="112" rx="7" ry="5.5" fill="var(--dog-body)" stroke="var(--dog-line)" stroke-width="1.2"/>
+          </g>
+          <!-- 咖啡杯 -->
+          <g class="prop prop-coffee">
+            <path d="M102 120 h13 v9 a5 5 0 0 1 -5 5 h-3 a5 5 0 0 1 -5 -5 z" fill="#FFFDF8" stroke="#C9C2B6" stroke-width="1.4"/>
+            <path d="M115 122 q5 0 5 4 q0 4 -5 4" fill="none" stroke="#C9C2B6" stroke-width="1.4"/>
+            <path class="steam" d="M106 116 q2 -4 0 -7" stroke="#D9D2C7" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+            <path class="steam s2" d="M112 116 q2 -4 0 -7" stroke="#D9D2C7" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+          </g>
+          <!-- 书本 -->
+          <g class="prop prop-book">
+            <path d="M44 118 L80 113 L80 132 L44 137 Z" fill="#FFFDF8" stroke="#C9C2B6" stroke-width="1.4"/>
+            <path d="M80 113 L116 118 L116 137 L80 132 Z" fill="#FBF6EC" stroke="#C9C2B6" stroke-width="1.4"/>
+            <path d="M50 122 L72 119 M50 127 L72 124" stroke="#D9D2C7" stroke-width="1.5" stroke-linecap="round"/>
+          </g>
+          <!-- 记事本 + 笔 -->
+          <g class="prop prop-paper">
+            <rect x="46" y="116" width="30" height="20" rx="2" fill="#FFFDF8" stroke="#C9C2B6" stroke-width="1.4" transform="rotate(-5 61 126)"/>
+            <path d="M53 123 h15 M53 128 h11" stroke="#D9D2C7" stroke-width="1.5" stroke-linecap="round"/>
+            <path d="M96 118 l10 -6" stroke="#8A6B4A" stroke-width="2.2" stroke-linecap="round"/>
+          </g>
+          <!-- 音符 -->
+          <g class="prop prop-notes">
+            <text class="note n1" x="116" y="46" font-size="14" fill="var(--rind-dark)">♪</text>
+            <text class="note n2" x="128" y="34" font-size="11" fill="var(--flesh)">♫</text>
+          </g>
+          <!-- 会议气泡 -->
+          <g class="prop prop-bubbles">
+            <rect x="104" y="26" width="34" height="18" rx="8" fill="#fff" stroke="#D8CFBF" stroke-width="1.4"/>
+            <path d="M112 44 l-2 6 7 -5" fill="#fff" stroke="#D8CFBF" stroke-width="1.4"/>
+            <rect x="26" y="20" width="30" height="16" rx="7" fill="#fff" stroke="#D8CFBF" stroke-width="1.4"/>
+          </g>
+          <!-- 叹气 -->
+          <text class="prop sigh-mark" x="112" y="32" font-size="12" font-weight="700" fill="#9A938B">唉</text>
+          <!-- 疑问 -->
+          <text class="prop think-mark" x="114" y="28" font-size="15" font-weight="900" fill="#9A938B">?</text>
+          <!-- 饼干 -->
+          <g class="prop prop-snack">
+            <circle cx="100" cy="126" r="8.5" fill="#E8C48F" stroke="#D2A868" stroke-width="1.4"/>
+            <circle cx="97" cy="123" r="1.1" fill="#8A6B4A"/>
+            <circle cx="103" cy="127" r="1.1" fill="#8A6B4A"/>
+          </g>
+          <!-- 刷手机 -->
+          <g class="prop prop-scroll">
+            <rect x="72" y="112" width="16" height="24" rx="3.5" fill="#2B2B33" transform="rotate(-7 80 124)"/>
+            <rect x="75" y="115" width="10" height="18" rx="1.5" fill="#8FD0FF" opacity=".9" transform="rotate(-7 80 124)"/>
+            <ellipse cx="70" cy="124" rx="6.5" ry="5.5" fill="var(--dog-body)" stroke="var(--dog-line)" stroke-width="1.1"/>
+            <ellipse cx="90" cy="122" rx="6.5" ry="5.5" fill="var(--dog-body)" stroke="var(--dog-line)" stroke-width="1.1"/>
+          </g>
+          <!-- 乌云小雨 -->
+          <g class="prop prop-rain">
+            <ellipse cx="112" cy="30" rx="12" ry="6" fill="#C9D6E2"/>
+            <path class="drop d1" d="M104 40 v6" stroke="#7EC8F7" stroke-width="2" stroke-linecap="round"/>
+            <path class="drop d2" d="M112 42 v6" stroke="#7EC8F7" stroke-width="2" stroke-linecap="round"/>
+            <path class="drop d3" d="M120 40 v6" stroke="#7EC8F7" stroke-width="2" stroke-linecap="round"/>
           </g>
           <ellipse class="crumb" cx="74" cy="88" rx="1.6" ry="2.4" fill="var(--seed)"/>
           <ellipse class="crumb c2" cx="82" cy="90" rx="1.6" ry="2.4" fill="var(--seed)"/>
@@ -783,6 +976,7 @@
     <h3 style="margin-top:12px">皮肤</h3>
     <div class="skin-row" id="skinRow"></div>
   </div>
+  </div>
 </div>
 
 <!-- 演示时间机（浏览器演示用，真挂件里隐藏） -->
@@ -792,7 +986,7 @@
   <button class="chip-btn" data-sim="sat-noon">周六 11:00</button>
   <button class="chip-btn" data-sim="real">真实时间</button>
 </div>
-<div class="demo-note">演示模式：模拟时间照常流逝。点小狗或主按钮都能摸鱼；搬砖/摸鱼时小狗会自动轮换小动作。</div>
+<div class="demo-note">演示模式：模拟时间照常流逝。点主按钮摸鱼，点小狗立刻换个动作；平时每 2 分钟自动换一次。</div>
 
 <!-- ================= 首次引导 ================= -->
 <div class="onboarding" id="onboarding">

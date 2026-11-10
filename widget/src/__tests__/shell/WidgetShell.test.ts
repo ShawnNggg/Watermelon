@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { WidgetShell } from "@/shell";
 import { MockRenderer } from "@/renderer/MockRenderer";
 import type { WorkSchedule } from "@/domain";
+import { ACTIONS_BY_MOOD } from "@/behavior";
 
 /** Node 环境测试 —— Shell + MockRenderer 不依赖 DOM */
 const SCHEDULE: WorkSchedule = {
@@ -42,18 +43,18 @@ describe("WidgetShell", () => {
     expect(true).toBe(true);
   });
 
-  it("handleEvent({kind:'offWorkReached'}) → action=happy + trigger=celebrate", () => {
+  it("handleEvent({kind:'offWorkReached'}) → action 属于 happy 池 + trigger=celebrate", () => {
     shell.start();
     vi.setSystemTime(new Date(2026, 10, 4, 18, 0)); // 周三 18:00 下班
     shell.handleEvent({ kind: "offWorkReached" });
-    expect(mock.lastAction).toBe("happy");
+    expect(ACTIONS_BY_MOOD.happy).toContain(mock.lastAction);
     expect(mock.triggers).toContain("celebrate");
   });
 
   it("handleEvent({kind:'moyuStart'}) → moyu action + trigger=surprise", () => {
     shell.start();
     shell.handleEvent({ kind: "moyuStart" });
-    expect(["melon", "toilet"]).toContain(mock.lastAction);
+    expect(ACTIONS_BY_MOOD.moyu).toContain(mock.lastAction);
     expect(mock.triggers).toContain("surprise");
   });
 

@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect, beforeEach } from "vitest";
-import { BehaviorEngine, moodOf } from "@/behavior";
+import { BehaviorEngine, moodOf, ACTIONS_BY_MOOD } from "@/behavior";
 import type { BehaviorSnapshot, PetAction, Mood } from "@/behavior";
 
 /** 测试用基准快照：周三 13:30 正常搬砖 */
@@ -70,18 +70,18 @@ describe("BehaviorEngine — 基础 tick", () => {
   let eng: BehaviorEngine;
   beforeEach(() => { eng = makeEngine(); });
 
-  it("working tick → 从 5 个 actions 里 pick 一个", () => {
+  it("working tick → 从 working 动作池里 pick 一个", () => {
     const out = eng.tick(WORKING);
     expect(out.actionChanged).toBe(true);
-    expect(["typing", "present", "scolded", "dozing", "phone"]).toContain(out.action);
+    expect(ACTIONS_BY_MOOD.working).toContain(out.action);
   });
 
-  it("overtime tick → 固定 overtime", () => {
-    expect(eng.tick(OVERTIME).action).toBe("overtime");
+  it("overtime tick → 从加班动作池里 pick 一个", () => {
+    expect(ACTIONS_BY_MOOD.overtime).toContain(eng.tick(OVERTIME).action);
   });
 
-  it("happy tick → 固定 happy", () => {
-    expect(eng.tick(HAPPY).action).toBe("happy");
+  it("happy tick → 从下班动作池里 pick 一个", () => {
+    expect(ACTIONS_BY_MOOD.happy).toContain(eng.tick(HAPPY).action);
   });
 
   it("rest tick → 固定 sleep", () => {
@@ -92,9 +92,9 @@ describe("BehaviorEngine — 基础 tick", () => {
     expect(eng.tick(BEFORE_WORK).action).toBe("dozing");
   });
 
-  it("moyu tick → 从 melon/toilet 里 pick 一个", () => {
+  it("moyu tick → 从 melon/toilet/scroll/snack/nap 里 pick 一个", () => {
     const a = eng.tick(MOYU).action;
-    expect(["melon", "toilet"]).toContain(a);
+    expect(ACTIONS_BY_MOOD.moyu).toContain(a);
   });
 });
 
@@ -118,9 +118,9 @@ describe("BehaviorEngine — 冷却 + 防重复", () => {
       const a = eng.tick(WORKING, now + 100_000 + i * 1000).action;
       if (a !== a1) { changed = true; break; }
     }
-    // 5 个候选防重复，20 次里大概率会换（非严格断言，只跑 1 次）
+    // 多候选防重复，20 次里大概率会换（非严格断言，只跑 1 次）
     void changed; // 不强制 assert —— 纯随机
-    expect(["typing", "present", "scolded", "dozing", "phone"]).toContain(a1);
+    expect(ACTIONS_BY_MOOD.working).toContain(a1);
   });
 
   it("mood 变化 → force pick，忽略冷却", () => {
@@ -128,8 +128,8 @@ describe("BehaviorEngine — 冷却 + 防重复", () => {
     const a1 = eng.tick(WORKING, now).action;
     // 立刻切到 moyu（冷却期也得换）
     const a2 = eng.tick(MOYU, now + 100).action;
-    expect(a2).not.toBe(a1); // working 的 a1 不可能是 melon/toilet
-    expect(["melon", "toilet"]).toContain(a2);
+    expect(a2).not.toBe(a1); // working 的 a1 不可能是 moyu 池里的动作
+    expect(ACTIONS_BY_MOOD.moyu).toContain(a2);
   });
 });
 
@@ -143,17 +143,17 @@ describe("BehaviorEngine — 事件驱动", () => {
       { kind: "phaseChange", prev: WORKING, next: HAPPY },
       HAPPY,
     );
-    expect(out.action).toBe("happy");
+    expect(ACTIONS_BY_MOOD.happy).toContain(out.action);
     expect(out.oneshots).toContain("celebrate");
     expect(out.actionChanged).toBe(true);
   });
 
-  it("phaseChange working→working(overtime) → action=overtime, no celebrate", () => {
+  it("phaseChange working→working(overtime) → action 属于加班池，no celebrate", () => {
     const out = eng.handle(
       { kind: "phaseChange", prev: WORKING, next: OVERTIME },
       OVERTIME,
     );
-    expect(out.action).toBe("overtime");
+    expect(ACTIONS_BY_MOOD.overtime).toContain(out.action);
     expect(out.oneshots).not.toContain("celebrate");
   });
 
@@ -161,21 +161,21 @@ describe("BehaviorEngine — 事件驱动", () => {
   it("moyuStart → 立刻切 moyu action + surprise oneshot", () => {
     eng.tick(WORKING); // 先在 working
     const out = eng.handle({ kind: "moyuStart" }, MOYU);
-    expect(["melon", "toilet"]).toContain(out.action);
+    expect(ACTIONS_BY_MOOD.moyu).toContain(out.action);
     expect(out.oneshots).toContain("surprise");
   });
 
   it("moyuEnd → 回到 working mood", () => {
     eng.tick(MOYU);
     const out = eng.handle({ kind: "moyuEnd" }, WORKING);
-    expect(["typing", "present", "scolded", "dozing", "phone"]).toContain(out.action);
+    expect(ACTIONS_BY_MOOD.working).toContain(out.action);
   });
 
   // —— offWorkReached ——
-  it("offWorkReached → 强制 happy + celebrate", () => {
+  it("offWorkReached → 强制 happy 池 + celebrate", () => {
     eng.tick(WORKING);
     const out = eng.handle({ kind: "offWorkReached" }, HAPPY);
-    expect(out.action).toBe("happy");
+    expect(ACTIONS_BY_MOOD.happy).toContain(out.action);
     expect(out.oneshots).toContain("celebrate");
   });
 

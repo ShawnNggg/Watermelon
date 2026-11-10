@@ -1,2 +1,2 @@
 export * from "./types";
-export { BehaviorEngine, moodOf } from "./BehaviorEngine";
+export { BehaviorEngine, moodOf, ACTIONS_BY_MOOD } from "./BehaviorEngine";

@@ -1,33 +1,70 @@
-// @ts-nocheck — 旧内联 JS 代码，将来逐步拆成 import @/domain/@/behavior 时获得严格类型
 "use strict";
+
+import { resolveDay as resolveDayPure } from "./domain";
+import type { DayOverride, DayOverrides, HolidayInfo, MoyuSession, RestReason, WorkdayResult, WorkSchedule } from "./domain";
+import { BehaviorEngine, moodOf } from "./behavior";
+import type { BehaviorSnapshot, PetAction } from "./behavior";
+
+const be = new BehaviorEngine();
 // Tauri 真挂件模式：透明白底 + 隐藏演示元素
 if (window.__TAURI__) document.body.classList.add("in-app");
+
+/** 节假日表项（HOLIDAY_MAP / CAL_MAP 共用） */
+interface HolidayEntry {
+  name?: string;
+  isOffDay: boolean;
+  source?: "calendar" | "holiday" | "none";
+}
+
+/** 本地持久化状态 */
+interface WidgetState {
+  onboarded: boolean;
+  restMode: string;
+  schedule: WorkSchedule;
+  salary: number;
+  otRate: number;
+  overrides: DayOverrides;
+  todos: { id: number; title: string; done: boolean }[];
+  moyuSessions: MoyuSession[];
+  skin: string;
+}
 
 /* ============ 状态 ============ */
 const LS_KEY = "watermelon-widget-v1";
 // 休息模式预设（周一=1 … 周日=7）
-const REST_PRESETS = {
+const REST_PRESETS: Record<string, { label: string; workdays: number[] | null }> = {
   double:    { label: "双休",  workdays: [2,3,4,5,6] },
   "single-sun": { label: "单休·周日", workdays: [2,3,4,5,6,7] },
   "single-sat": { label: "单休·周六", workdays: [1,2,3,4,5,6] },
   custom:    { label: "自定义", workdays: null }   // workdays 由用户手动勾
 };
-const defaultState = () => ({
+const defaultState = (): WidgetState => ({
   onboarded: false,
   restMode: "double",   // 休息模式预设
   schedule: { workdays: [2,3,4,5,6], startH: 9, startM: 0, endH: 18, endM: 0 },
   salary: 0,          // 月薪，0 = 未录入
   otRate: 0,          // 加班费倍率，0 = 没有加班费
-  overrides: {},      // dayKey -> { type, minutes? }
+  overrides: {},      // dayKey -> { kind, minutes? }
   todos: [],
   moyuSessions: [],
   skin: "watermelon"  // 当前皮肤 id
 });
-function load() {
-  try { return Object.assign(defaultState(), JSON.parse(localStorage.getItem(LS_KEY)) || {}); }
+function load(): WidgetState {
+  try {
+    const raw: any = JSON.parse(localStorage.getItem(LS_KEY) || "{}");
+    // 兼容迁移：旧版 overrides 用 type 字段，新版 domain 用 kind
+    if (raw.overrides) {
+      for (const [k, v] of Object.entries<any>(raw.overrides)) {
+        if (v && typeof v === "object" && "type" in v && !("kind" in v)) {
+          raw.overrides[k] = { kind: v.type, ...(v.minutes != null ? { minutes: v.minutes } : {}) };
+        }
+      }
+    }
+    return Object.assign(defaultState(), raw);
+  }
   catch { return defaultState(); }
 }
-let S = load();
+let S: WidgetState = load();
 const save = () => localStorage.setItem(LS_KEY, JSON.stringify(S));
 const DAY_MS = 86400000;   // 提前声明，initHolidays 要用到
 
@@ -42,11 +79,11 @@ const DAY_MS = 86400000;   // 提前声明，initHolidays 要用到
  */
 const HOLIDAY_API = "https://api.jiejiariapi.com/v1";
 const HOLIDAY_CACHE_PREFIX = "watermelon-widget-hol-";
-let HOLIDAY_MAP = {};   // 合并后的 { "YYYY-MM-DD": { name, isOffDay, source } }
+let HOLIDAY_MAP: Record<string, HolidayEntry> = {};   // 合并后的 { "YYYY-MM-DD": { name, isOffDay, source } }
 
 // 内嵌国务院节假日通知数据（节假日里标注过的日期，含调休补班）
 // 来源：api.jiejiariapi.com/v1/holidays/{year}（国务院办公厅每年 11 月发布次年节假日）
-const OFFLINE_HOLIDAYS = {
+const OFFLINE_HOLIDAYS: Record<number, Record<string, { name: string; isOffDay: boolean }>> = {
   2025: {
     "2025-01-01": { name: "元旦", isOffDay: true },
     "2025-01-26": { name: "春节", isOffDay: false },
@@ -127,20 +164,20 @@ const OFFLINE_HOLIDAYS = {
   },
 };
 
-function getHolidayInfo(day) {
+function getHolidayInfo(day: Date): HolidayEntry | null {
   return HOLIDAY_MAP[dayKey(day)] || null;
 }
 
 // 初始化：先从 localStorage / 内嵌数据拿一份，保证立刻可用
 (function initHolidaysSync() {
   const y = new Date().getFullYear();
-  const map = {};
+  const map: Record<string, HolidayEntry> = {};
   [y - 1, y, y + 1].forEach(yr => {
     const raw = localStorage.getItem(HOLIDAY_CACHE_PREFIX + yr);
     if (raw) {
       try {
-        const parsed = JSON.parse(raw);
-        Object.entries(parsed.data || {}).forEach(([k, v]) => { map[k] = { ...v, source: "holiday" }; });
+        const parsed: any = JSON.parse(raw);
+        Object.entries<any>(parsed.data || {}).forEach(([k, v]) => { map[k] = { ...v, source: "holiday" }; });
         return;
       } catch {}
     }
@@ -153,13 +190,13 @@ function getHolidayInfo(day) {
 })();
 
 // 后台偷偷尝试 fetch（成功的话覆盖缓存，跨年自动拉新年份）
-async function refreshHolidayYear(year) {
+async function refreshHolidayYear(year: number): Promise<Record<string, HolidayEntry> | null> {
   try {
     const res = await fetch(`${HOLIDAY_API}/holidays/${year}`, { cache: "no-store" });
     if (!res.ok) return null;
-    const json = await res.json();
-    const flat = {};
-    for (const [k, v] of Object.entries(json || {})) {
+    const json: any = await res.json();
+    const flat: Record<string, HolidayEntry> = {};
+    for (const [k, v] of Object.entries<any>(json || {})) {
       flat[k] = { name: v.name, isOffDay: v.isOffDay, source: "holiday" };
     }
     localStorage.setItem(HOLIDAY_CACHE_PREFIX + year, JSON.stringify({ fetchedAt: Date.now(), data: flat }));
@@ -191,7 +228,7 @@ async function refreshHolidayYear(year) {
  * 优先级：calendar 源 > holiday API 离线源 > workdays.includes
  */
 const CAL_CACHE_KEY = "watermelon-widget-cal-";
-let CAL_MAP = {};   // { "YYYY-MM-DD": { name, isOffDay, source: "calendar" } }
+let CAL_MAP: Record<string, HolidayEntry> = {};   // { "YYYY-MM-DD": { name, isOffDay, source: "calendar" } }
 let CAL_PERM = localStorage.getItem("watermelon-widget-cal-perm");  // "granted" | "denied" | null
 
 const CAL_HOLIDAY_KEYWORDS = ["假", "法定", "节日", "除夕", "holiday", "Holiday", "日"];
@@ -200,7 +237,7 @@ const CAL_WORKDAY_KEYWORDS = ["班", "补", "调", "调休", "workday", "Workday
 async function requestCalendarPermission() {
   if (!window.__TAURI__) return "unsupported";
   try {
-    const status = await __TAURI__.core.invoke("grant_calendar_permission");
+    const status = await window.__TAURI__!.core!.invoke!("grant_calendar_permission") as string;
     CAL_PERM = status;
     localStorage.setItem("watermelon-widget-cal-perm", status);
     if (status === "granted") await refreshCalendarEvents();
@@ -220,9 +257,9 @@ async function refreshCalendarEvents() {
   const start = `${y - 1}-01-01`;
   const end = `${y + 2}-12-31`;  // 多预拉一年
   try {
-    const raw = await __TAURI__.core.invoke("get_calendar_events", { startDate: start, endDate: end });
+    const raw = await window.__TAURI__!.core!.invoke!("get_calendar_events", { startDate: start, endDate: end }) as string;
     const events = JSON.parse(raw || "[]");
-    const map = {};
+    const map: Record<string, HolidayEntry> = {};
     for (const ev of events) {
       const title = (ev.title || "").trim();
       if (!title) continue;
@@ -261,7 +298,7 @@ async function refreshCalendarEvents() {
   const raw = localStorage.getItem(CAL_CACHE_KEY + y);
   if (raw) {
     try {
-      const parsed = JSON.parse(raw);
+      const parsed: any = JSON.parse(raw);
       CAL_MAP = parsed.data || {};
       for (const [k, v] of Object.entries(CAL_MAP)) HOLIDAY_MAP[k] = v;
     } catch {}
@@ -283,12 +320,12 @@ const SKIN_KEYS = [
   "btn-soft", "dog-body", "dog-ear", "dog-inner", "dog-line", "cheek", "text", "text-dim"
 ];
 // 启动时记下 :root 的默认值，切皮肤时先全部还原再覆盖
-const BASE_VARS = {};
+const BASE_VARS: Record<string, string> = {};
 SKIN_KEYS.forEach(k => {
   BASE_VARS[k] = getComputedStyle(document.documentElement).getPropertyValue("--" + k).trim();
 });
 
-const SKINS = [
+const SKINS: { id: string; name: string; vars: Record<string, string> }[] = [
   { id: "watermelon", name: "西瓜红", vars: {} },
   { id: "matcha", name: "抹茶", vars: {
       "flesh": "#5FB86A", "flesh-light": "#D6EFD9", "flesh-mid": "#8ED09A",
@@ -348,7 +385,7 @@ const SKINS = [
   }}
 ];
 
-function applySkin(id) {
+function applySkin(id: string) {
   const skin = SKINS.find(s => s.id === id) || SKINS[0];
   const root = document.documentElement.style;
   SKIN_KEYS.forEach(k => {
@@ -425,7 +462,7 @@ function syncCalUI() {
   }
 
   // 绑定事件（只绑一次）
-  if (!grantBtn._calBound) {
+  if (!(grantBtn as any)._calBound) {
     grantBtn.onclick = async () => {
       grantBtn.textContent = "请求权限中…";
       const status = await requestCalendarPermission();
@@ -436,106 +473,110 @@ function syncCalUI() {
       }
       syncCalUI();
     };
-    grantBtn._calBound = true;
+    (grantBtn as any)._calBound = true;
   }
-  if (!refreshBtn._calBound) {
+  if (!(refreshBtn as any)._calBound) {
     refreshBtn.onclick = async () => {
       refreshBtn.textContent = "刷新中…";
       await refreshCalendarEvents();
       refreshBtn.textContent = "刷新";
       syncCalUI();
     };
-    refreshBtn._calBound = true;
+    (refreshBtn as any)._calBound = true;
   }
 }
 
 /* ============ 窗口高度自适应 ============ */
 // 内容长高了就让真窗口跟着长高，不用滚动条
-let fitTimer = 0;
+let fitTimer: ReturnType<typeof setTimeout> | number = 0;
 let lastFitH = 0;
 function autoFit() {
   if (!window.__TAURI__ || !window.__TAURI__.core) return;
   clearTimeout(fitTimer);
   fitTimer = setTimeout(() => {
-    let need = Math.ceil($("widget").getBoundingClientRect().height + 14);
+    const w = $("widget");
+    const sc = $("wScroll");
+    // 先解除约束再测：否则被裁切时 scrollHeight 会被客户端高度“污染”，内容变少后无法回落
+    document.body.classList.remove("capped");
+    w.style.height = "";
+    // 用滚动容器的 scrollHeight 测真实内容高度（窗口被裁切时 rect 高度不可靠）
+    const contentH = Math.ceil((sc ? sc.scrollHeight : w.scrollHeight) + 16 + 14);
     const ob = $("onboarding");
-    if (ob && ob.classList.contains("show")) {
-      need = Math.max(need, Math.ceil($("obCard").getBoundingClientRect().height + 44));
-    }
-    const max = Math.max(240, (window.screen.availHeight || 900) - 60);
-    const h = Math.round(Math.min(Math.max(need, 200), max));
-    // 高度没变化就不折腾窗口（±4px 容差，避免抖动）
+    const obNeed = ob && ob.classList.contains("show")
+      ? Math.ceil($("obCard").getBoundingClientRect().height + 44)
+      : 0;
+    const need = Math.max(contentH, obNeed);
+    const avail = Math.max(240, (window.screen.availHeight || 900) - 24);
+    const h = Math.round(Math.min(Math.max(need, 200), avail));
+    const capped = need > avail;
+    // 触顶时：固定窗口高度，让内部容器滚动，底部圆角由 .widget 保留
+    document.body.classList.toggle("capped", capped);
+    w.style.height = capped ? (h - 14) + "px" : "";
     if (Math.abs(h - lastFitH) < 4) return;
     lastFitH = h;
-    window.__TAURI__.core.invoke("set_widget_height", { height: h }).catch(() => {});
+    window.__TAURI__!.core!.invoke!("set_widget_height", { height: h }).catch(() => {});
   }, 30);
 }
 
 /* ============ 演示时钟 ============ */
-let sim = null;
-const now = () => sim ? new Date(sim.base + (Date.now() - sim.setAt)) : new Date();
-const startOfDay = d => { const x = new Date(d); x.setHours(0,0,0,0); return x; };
-const dayKey = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
-const fmtHM = d => `${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;
-function fmtHMSms(ms) {
+let sim: { base: number; setAt: number } | null = null;
+const now = (): Date => sim ? new Date(sim.base + (Date.now() - sim.setAt)) : new Date();
+const startOfDay = (d: Date | number): Date => { const x = new Date(d); x.setHours(0,0,0,0); return x; };
+const dayKey = (d: Date): string => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+const fmtHM = (d: Date | number): string => { const x = new Date(d); return `${String(x.getHours()).padStart(2,"0")}:${String(x.getMinutes()).padStart(2,"0")}`; };
+function fmtHMSms(ms: number): string {
   const t = Math.max(0, ms);
-  const p = n => String(n).padStart(2, "0");
+  const p = (n: number) => String(n).padStart(2, "0");
   return `${p(Math.floor(t/3600000))}:${p(Math.floor(t/60000)%60)}:${p(Math.floor(t/1000)%60)}`;
 }
 
 /* ============ 引擎（同 Swift 核心逻辑） ============ */
-function resolveDay(day) {
-  const ov = S.overrides[dayKey(day)];
-  // 用户手动 override 优先（最高优先级）
-  if (ov && (ov.type === "holiday" || ov.type === "leave")) return { work: false, reason: ov.type };
-  if (ov && ov.type === "overtime") { /* 先继续往下算时间，后面统一处理 */ }
+/** statusAt 的快照：type 为判别字段，各分支字段互不重叠 */
+type DayStatus =
+  | { type: "rest"; reason?: RestReason; holidayName?: string }
+  | { type: "beforeWork"; start: number; end: number }
+  | { type: "working"; work: true; start: number; end: number; normalEnd: number; overtimeMin: number; holidayName?: string; remaining: number; progress: number }
+  | { type: "offWork"; day: WorkdayResult };
 
-  // 节假日 API 数据（比 workdays.includes 优先级高）
+// 桥接函数：domain 层返回 epoch ms 数字，内部统一转成 Date 供渲染层沿用旧逻辑
+function resolveDay(day: Date): WorkdayResult {
   const h = getHolidayInfo(day);
-  if (h) {
-    if (h.isOffDay) {
-      // 法定休 / 传统节日（哪怕本来是工作日）
-      return { work: false, reason: "holiday", holidayName: h.name };
-    }
-    // isOffDay=false 且命中 holidays → 调休补班（哪怕那天是周六/周日也要上班）
-  } else if (!S.schedule.workdays.includes(day.getDay() + 1)) {
-    // 没命中 API 标注 → 走本地 workdays 判定
-    return { work: false, reason: "weekend" };
-  }
-
-  // 到这里：要么本地 workday，要么 API 告诉我们是补班
-  const start = new Date(startOfDay(day)); start.setHours(S.schedule.startH, S.schedule.startM, 0, 0);
-  let end = new Date(startOfDay(day)); end.setHours(S.schedule.endH, S.schedule.endM, 0, 0);
-  const normalEnd = new Date(end);
-  if (ov && ov.type === "overtime") end = new Date(end.getTime() + ov.minutes * 60000);
-  const limit = new Date(startOfDay(day).getTime() + DAY_MS - 1000);
-  if (end > limit) end = limit;
-  if (end <= start) return { work: false, reason: "weekend" };
-  return { work: true, start, end, normalEnd, overtimeMin: ov && ov.type === "overtime" ? ov.minutes : 0, holidayName: h?.source === "holiday" ? h.name : undefined };
+  const holiday: HolidayInfo | null = h
+    ? { isOffDay: h.isOffDay, name: h.name, source: (h.source || "holiday") as HolidayInfo["source"] }
+    : null;
+  return resolveDayPure(day, S.schedule, S.overrides, holiday);
 }
-function statusAt(t) {
+function statusAt(t: Date): DayStatus {
+  const tn = t.getTime();
   const r = resolveDay(t);
   if (!r.work) return { type: "rest", reason: r.reason, holidayName: r.holidayName };
-  if (t < r.start) return { type: "beforeWork", start: r.start, end: r.end };
-  if (t < r.end) return { type: "working", ...r, remaining: r.end - t, progress: (t - r.start) / (r.end - r.start) };
+  const start = r.start!, end = r.end!;
+  if (tn < start) return { type: "beforeWork", start, end };
+  if (tn < end) {
+    return {
+      type: "working", work: true, start, end,
+      normalEnd: r.normalEnd!, overtimeMin: r.overtimeMin, holidayName: r.holidayName,
+      remaining: end - tn, progress: (tn - start) / (end - start),
+    };
+  }
   return { type: "offWork", day: r };
 }
-function weekendCountdown(t) {
+function weekendCountdown(t: Date): number | null {
   const mon0 = (t.getDay() + 6) % 7;
   for (let w = 0; w < 4; w++) {
     const ws = new Date(startOfDay(t).getTime() + (w * 7 - mon0) * DAY_MS);
-    let lastEnd = null;
+    let lastEnd: number | null = null;
     for (let i = 0; i < 7; i++) {
       const r = resolveDay(new Date(ws.getTime() + i * DAY_MS));
-      if (r.work) lastEnd = r.end;
+      if (r.work) lastEnd = r.end!;
     }
-    if (lastEnd && lastEnd > t) return lastEnd - t;
+    if (lastEnd && lastEnd > t.getTime()) return lastEnd - t.getTime();
   }
   return null;
 }
 
 // 找下一个休息日的 00:00 —— 以当前 workdays 为准，先看本周，不够看下周
-function nextRestDayStart(t) {
+function nextRestDayStart(t: Date): Date | null {
   const mon0 = (t.getDay() + 6) % 7;
   for (let w = 0; w < 3; w++) {
     const ws = new Date(startOfDay(t).getTime() + (w * 7 - mon0) * DAY_MS);
@@ -551,7 +592,7 @@ function nextRestDayStart(t) {
 }
 
 // 上一个休息日的 24:00（= 上一个休息日 00:00 + DAY_MS）—— 用来算已休了多少
-function prevRestDayEnd(t) {
+function prevRestDayEnd(t: Date): Date | null {
   const mon0 = (t.getDay() + 6) % 7;
   for (let w = 0; w < 3; w++) {
     const ws = new Date(startOfDay(t).getTime() - ((w + 1) * 7 + mon0) * DAY_MS);
@@ -564,7 +605,7 @@ function prevRestDayEnd(t) {
 }
 
 // 周末进度条渲染：从周一 00:00 → 下个休息日 00:00 的墙钟进度
-function renderWeekendBar(t) {
+function renderWeekendBar(t: Date) {
   const restStart = nextRestDayStart(t);
   const bar = $("weekendBar"), fill = $("weekendFill"), marker = $("weekendMarker"), info = $("weekendInfo");
   if (!restStart) { bar.style.display = "none"; return; }
@@ -603,23 +644,24 @@ function renderWeekendBar(t) {
   info.innerHTML = `距休息 <b>${rh}h${rm}</b> · 本周已过 ${Math.round(progress*100)}%（上班 ${doneDays} 天）`;
 }
 // 一周进度：从本周一开始扫 7 天
-function weekProgress(t) {
+interface WeekDay { rest?: boolean; done: boolean; today?: boolean; frac: number; date: Date; overtimeMin: number }
+function weekProgress(t: Date) {
   const mon0 = (t.getDay() + 6) % 7;
   const ws = new Date(startOfDay(t).getTime() - mon0 * DAY_MS);
-  const days = [];     // 7 天逐日状态
+  const days: WeekDay[] = [];     // 7 天逐日状态
   let totalWorkMs = 0, doneWorkMs = 0, totalWorkdays = 0, doneWorkdays = 0;
   let todayProgress = 0;
   for (let i = 0; i < 7; i++) {
     const d = new Date(ws.getTime() + i * DAY_MS);
     const r = resolveDay(d);
-    if (!r.work) { days.push({ rest: true, date: d }); continue; }
+    if (!r.work) { days.push({ rest: true, done: false, frac: 0, date: d, overtimeMin: 0 }); continue; }
     totalWorkdays++;
-    const dayMs = r.end - r.start;
+    const dayMs = r.end! - r.start!;
     totalWorkMs += dayMs;
     let frac = 0;
     if (d.getFullYear() === t.getFullYear() && d.getMonth() === t.getMonth() && d.getDate() === t.getDate()) {
       // 今天
-      frac = Math.max(0, Math.min(1, (t - r.start) / dayMs));
+      frac = Math.max(0, Math.min(1, (t.getTime() - r.start!) / dayMs));
       todayProgress = frac;
       days.push({ done: frac >= 1, today: true, frac, date: d, overtimeMin: r.overtimeMin });
     } else if (d < startOfDay(t)) {
@@ -631,7 +673,7 @@ function weekProgress(t) {
   }
   return { days, totalWorkdays, doneWorkdays, todayProgress };
 }
-function renderWeekBar(t) {
+function renderWeekBar(t: Date) {
   const w = weekProgress(t);
   const bar = $("weekBar"); bar.innerHTML = "";
   const labels = document.createElement("div");
@@ -661,9 +703,9 @@ function renderWeekBar(t) {
   const total = w.totalWorkdays;
   const doneCount = w.doneWorkdays + (w.days.find(x => x.today && x.frac > 0) ? 1 : 0);
   const r = resolveDay(t);
-  if (r.work && r.end > t) {
-    const remH = Math.floor((r.end - t) / 3600000);
-    const remM = Math.floor((r.end - t) % 3600000 / 60000);
+  if (r.work && r.end! > t.getTime()) {
+    const remH = Math.floor((r.end! - t.getTime()) / 3600000);
+    const remM = Math.floor((r.end! - t.getTime()) % 3600000 / 60000);
     $("weekSummary").innerHTML = `本周 ${doneCount}/${total} 工作日 · 今日还剩 <b>${remH}h${remM}m</b>`;
   } else if (r.work) {
     $("weekSummary").innerHTML = `本周 ${doneCount}/${total} 工作日 · 今日已圆满`;
@@ -673,7 +715,7 @@ function renderWeekBar(t) {
   // 距休息进度条（基于当前 workdays / overrides 自动算）
   renderWeekendBar(t);
 }
-function moyuMs(t) {
+function moyuMs(t: Date) {
   const ds = startOfDay(t).getTime(), de = ds + DAY_MS;
   let total = 0, active = false;
   for (const s of S.moyuSessions) {
@@ -692,7 +734,7 @@ function perSecondWage() {
   if (!S.salary || hours <= 0) return 0;
   return S.salary / 21.75 / hours / 3600;
 }
-const fmtMoney = v => "¥" + v.toFixed(4);
+const fmtMoney = (v: number) => "¥" + v.toFixed(4);
 
 /* ============ 幽默文案 ============ */
 const LINES = {
@@ -705,25 +747,37 @@ const LINES = {
 };
 
 /* ============ 桌宠动作调度 ============ */
-const ACT_LINES = {
+const ACT_LINES: Record<string, string[]> = {
   typing: ["噼里啪啦一顿敲，其实在斗图", "键盘冒火星，产出为零", "这个需求很简单.jpg"],
   present: ["我简单讲两句（第 40 分钟）", "大家看这条曲线……它不乐观", "PPT 第 87 页，坚持住"],
   scolded: ["是是是，马上改（第 8 版）", "好的收到，问题都怪我", "耳朵已关闭，灵魂已下班"],
   dozing: ["我没睡，我在闭目思考", "眼皮：我先下班了", "zzz…啊！老板我在听！"],
   phone: ["喂您好，方案已发您邮箱（没发）", "好好好，都可以谈", "客户说要五彩斑斓的黑"],
+  coffee: ["第三杯了，心跳有点快", "咖啡续命，命是续上了，人还是困", "这杯喝完就干活（骗自己）"],
+  stretch: ["伸个懒腰，骨头都在抗议", "站起来走两步，假装很健康", "工位待久了，腰已经不是我的了"],
+  think: ["这个需求……为什么？", "想不明白，先发会儿呆", "大脑正在加载，请稍候"],
+  read: ["文档三百页，重点一句话", "看完了，等于没看", "已阅，不懂，但大受震撼"],
+  write: ["记笔记：会后……（忘了）", "字写得挺好看，没人看", "周报憋了半天，就两句"],
+  music: ["戴上耳机，世界与我无关", "这歌单是打工人的精神止痛药", "音量 100%，老板也听不见"],
+  meeting: ["这个会，可以拉个会讨论", "会议结论：下次再开个会", "摄像头关了，人在被窝"],
+  sigh: ["唉……（此处省略一万字）", "深呼吸，还能撑", "叹气不扣钱，多叹两口"],
   melon: ["吧唧吧唧…这瓜真甜", "摸鱼赚的钱，才是赚的钱", "帮我盯着点老板，汪"],
   toilet: ["厕所，打工人最后的净土", "带薪蹲坑，赚到", "刷完这条视频就回去…真的"],
+  scroll: ["就刷五分钟（已过两小时）", "手指在划，灵魂在飘", "这条视频我必须看完……下一条也是"],
+  snack: ["偷吃一口，快乐加倍", "零食藏抽屉，老板找不到", "下午三点的糖分，是刚需"],
+  nap: ["趴五分钟（其实半小时）", "工位午睡，姿势越怪睡得越香", "老板路过我就假装看屏幕"],
+  overtime: ["人在工位，魂在床位", "这班加得，狗都困了", "加班费结一下？（灵魂拷问）"],
+  crunch: ["Deadline 在前，键盘冒烟", "手速拉满，脑速归零", "改完这版就发（第 12 版）"],
+  despair: ["这活儿干不完，根本干不完", "看着屏幕，屏幕看着我", "算了，先发会儿呆吧"],
+  happy: ["下班不积极，思想有问题", "今日份的班就上到这了", "溜了溜了，瓜都等急了"],
+  dance: ["下班了，舞可以跳起来了", "快乐到模糊", "老板不在，怎么开心怎么来"],
+  wag: ["尾巴已经摇成螺旋桨", "今天没加班，尾巴表示同意", "开心得语无伦次，汪！"],
+  sleep: ["今天不上班，瓜随便吃", "呼……zzz", "睡到自然醒，人生赢家"],
 };
-const PET_ACTS = {
-  working: ["typing", "present", "scolded", "dozing", "phone"],
-  moyu: ["melon", "toilet"],
-  overtime: ["overtime"],
-  happy: ["happy"],
-  rest: ["sleep"],
-  beforeWork: ["dozing"],
-};
-let petMood = "", petAct = "", petTimer = 0;
-const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+// BehaviorEngine 单例，tick() 取代旧 PET_ACTS 随机挑选
+let petMood = "", petAct: PetAction | "" = "", petTimer: ReturnType<typeof setTimeout> | number = 0;
+let _lastSnap: BehaviorSnapshot | null = null;  // 缓存最近一次 BehaviorSnapshot，定时轮换时复用
+const pick = <T,>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
 function petLine() {
   if (petMood === "beforeWork") return pick(LINES.beforeWork);
   if (petMood === "rest") return pick(LINES.rest);
@@ -732,24 +786,36 @@ function petLine() {
   return pick(ACT_LINES[petAct] || LINES.working);
 }
 function rotateAct() {
-  clearTimeout(petTimer);
-  const list = PET_ACTS[petMood] || PET_ACTS.working;
-  let next = pick(list), guard = 0;
-  while (list.length > 1 && next === petAct && guard++ < 10) next = pick(list);
-  petAct = next;
-  $("widget").dataset.act = next;
-  setBubble(petLine());
-  petTimer = setTimeout(rotateAct, list.length > 1 ? 6500 + Math.random() * 3000 : 8000);
+  // 定时轮换：用缓存的 snap 再 tick 一次，BehaviorEngine 内部 cooldown 过期后会返回新 action
+  if (_lastSnap) {
+    const out = be.tick(_lastSnap);
+    if (out.action !== petAct) {
+      petAct = out.action;
+      $("widget").dataset.act = out.action;
+      setBubble(petLine());
+    }
+  }
+  const intervalMs = be.ROTATE_INTERVAL_MS || 120000;
+  petTimer = setTimeout(rotateAct, intervalMs);
 }
-function petSetMood(mood) {
-  if (mood === petMood) return;
-  petMood = mood;
-  rotateAct();
+// 桥接：从 render() 算出的状态组装 BehaviorSnapshot，交给 BehaviorEngine
+function petSetMood(snap: BehaviorSnapshot) {
+  _lastSnap = snap;
+  const out = be.tick(snap);
+  const mood = moodOf(snap);
+  if (mood !== petMood || out.action !== petAct) {
+    petMood = mood;
+    petAct = out.action;
+    $("widget").dataset.act = out.action;
+    setBubble(petLine());
+    clearTimeout(petTimer);
+    rotateAct();
+  }
 }
 
 /* ============ 渲染 ============ */
-const $ = id => document.getElementById(id);
-function setBubble(text) {
+const $ = (id: string) => document.getElementById(id) as HTMLElement;
+function setBubble(text: string) {
   const b = $("bubble");
   b.classList.add("fade");
   setTimeout(() => { b.textContent = text; b.classList.remove("fade"); }, 250);
@@ -792,7 +858,7 @@ function render() {
     }
   } else if (st.type === "beforeWork") {
     progress = 0;
-    centerBig = fmtHMSms(st.start - t);
+    centerBig = fmtHMSms(st.start - t.getTime());
     centerLabel = "距离上班";
     chip = ["还没上班", "green"];
     mood = "beforeWork";
@@ -807,14 +873,15 @@ function render() {
   } else {
     progress = 0;
     const hol = st.holidayName;
+    const reasonKey = st.reason ?? "weekend";
     if (st.reason === "holiday" && hol) {
       centerBig = hol;
       centerLabel = "法定假日 · 尽情瓜";
       chip = [hol + "放假", "green"];
     } else {
-      centerBig = { weekend: "周末愉快", holiday: "今天放假", leave: "今天请假" }[st.reason];
+      centerBig = { weekend: "周末愉快", holiday: "今天放假", leave: "今天请假" }[reasonKey];
       centerLabel = "瓜都是甜的";
-      chip = [{ weekend: "周末愉快", holiday: "今天放假", leave: "今天请假" }[st.reason], "green"];
+      chip = [{ weekend: "周末愉快", holiday: "今天放假", leave: "今天请假" }[reasonKey], "green"];
     }
     mood = "rest";
     ringCls = "green";
@@ -824,13 +891,18 @@ function render() {
   // SVG 元素 className 是 SVGAnimatedString，不能直接赋值，用 setAttribute 或 classList
   ringFg.setAttribute("class", "ring-fg " + ringCls);
   ringFg.style.strokeDasharray = `${CIRC} ${CIRC}`;
-  ringFg.style.strokeDashoffset = CIRC * (1 - Math.max(0, Math.min(1, progress)));
+  ringFg.style.strokeDashoffset = String(CIRC * (1 - Math.max(0, Math.min(1, progress))));
   ringTime.innerHTML = centerBig + (centerMs ? `<span class="ms">.${String(my.ms % 1000).padStart(3,"0")}</span>` : "");
   ringLabel.textContent = centerLabel;
   ringPct.textContent = Math.round(progress * 100) + "%";
 
-  // 桌宠 + status chip
-  petSetMood(mood);
+  // 桌宠 + status chip —— 用 BehaviorSnapshot 桥接到 BehaviorEngine
+  const behSnap = {
+    phase: st.type,                 // "beforeWork" | "working" | "offWork" | "rest"
+    moyuActive: !!my.active,
+    overtimeMin: st.type === "working" ? st.overtimeMin : 0,
+  };
+  petSetMood(behSnap);
   $("statusChip").textContent = chip[0];
   $("statusChip").className = "status-chip " + chip[1];
 
@@ -881,7 +953,7 @@ function render() {
     btn.className = "main-btn";
   } else if (st.type === "offWork" && r.work) {
     // 下班了但今天本来是工作日 → 加班入口
-    btn.textContent = ov && ov.type === "overtime" ? "结束加班" : "开始加班";
+    btn.textContent = ov && ov.kind === "overtime" ? "结束加班" : "开始加班";
     btn.className = "main-btn ot-ing";
   } else if (st.type === "beforeWork" && r.work) {
     btn.textContent = "还没上班";
@@ -892,7 +964,7 @@ function render() {
   }
 
   // 今日特殊
-  $("overrideNote").textContent = ov ? `（${{overtime:"加班+2h",holiday:"放假",leave:"请假"}[ov.type]}）` : "";
+  $("overrideNote").textContent = ov ? `（${{overtime:"加班+2h",holiday:"放假",leave:"请假"}[ov.kind]}）` : "";
 
   // 内容高度会随状态/钱卡变化，定期校准窗口高度（无变化时不会真的调整）
   autoFit();
@@ -910,7 +982,7 @@ function toggleMoyu() {
   // 摸鱼中 → 结束摸鱼
   if (my.active) {
     const active = S.moyuSessions.find(s => s.end == null);
-    active.end = t.getTime();
+    if (active) active.end = t.getTime();
     save(); render();
     return;
   }
@@ -919,7 +991,7 @@ function toggleMoyu() {
   if (inOvertime) { setOv(null); return; }
 
   // 下班后的工作日 → 开始加班 +60 分钟（可叠加）
-  if (st.type === "offWork" && r.work) { setOv({ type: "overtime", minutes: 60 }); return; }
+  if (st.type === "offWork" && r.work) { setOv({ kind: "overtime", minutes: 60 }); return; }
 
   // 上班中 → 开始摸鱼
   if (st.type === "working") {
@@ -928,7 +1000,18 @@ function toggleMoyu() {
   }
 }
 $("mainBtn").onclick = toggleMoyu;
-$("dogSvg").onclick = toggleMoyu;   // 点小狗也能摸鱼
+// 点小狗：立刻换一个动作（不再触发摸鱼）
+function petNext() {
+  if (!_lastSnap) return;
+  const out = be.next(_lastSnap);
+  petMood = moodOf(_lastSnap);
+  petAct = out.action;
+  $("widget").dataset.act = out.action;
+  setBubble(petLine());
+  clearTimeout(petTimer);
+  rotateAct();
+}
+$("dogSvg").onclick = petNext;
 
 $("todoToggle").onclick = () => { $("todoDrawer").classList.toggle("open"); $("gearDrawer").classList.remove("open"); autoFit(); };
 $("gearToggle").onclick = () => { $("gearDrawer").classList.toggle("open"); $("todoDrawer").classList.remove("open"); syncSettingsUI(); autoFit(); };
@@ -946,17 +1029,17 @@ function renderTodos() {
     del.onclick = () => { S.todos = S.todos.filter(x => x.id !== item.id); save(); renderTodos(); };
     li.append(cb, sp, del); ul.appendChild(li);
   }
-  $("todoLeft").textContent = S.todos.filter(x => !x.done).length;
+  $("todoLeft").textContent = String(S.todos.filter(x => !x.done).length);
   autoFit();  // 待办增减后窗口跟着长/缩
 }
 $("todoAddBtn").onclick = () => {
-  const v = $("todoInput").value.trim(); if (!v) return;
+  const v = ($("todoInput") as HTMLInputElement).value.trim(); if (!v) return;
   S.todos.push({ id: Date.now(), title: v, done: false });
-  $("todoInput").value = ""; save(); renderTodos();
+  ($("todoInput") as HTMLInputElement).value = ""; save(); renderTodos();
 };
 
 /* ---- 设置 ---- */
-const WD = [["一",2],["二",3],["三",4],["四",5],["五",6],["六",7],["日",1]];
+const WD: [string, number][] = [["一",2],["二",3],["三",4],["四",5],["五",6],["六",7],["日",1]];
 function syncSettingsUI() {
   const row = $("wdRow"); row.innerHTML = "";
   WD.forEach(([label, code]) => {
@@ -970,38 +1053,41 @@ function syncSettingsUI() {
     };
     row.appendChild(b);
   });
-  $("startTime").value = `${String(S.schedule.startH).padStart(2,"0")}:${String(S.schedule.startM).padStart(2,"0")}`;
-  $("endTime").value = `${String(S.schedule.endH).padStart(2,"0")}:${String(S.schedule.endM).padStart(2,"0")}`;
-  $("salaryInput").value = S.salary || "";
-  document.querySelectorAll("#otRateRow .seg-btn").forEach(b => {
+  ($("startTime") as HTMLInputElement).value = `${String(S.schedule.startH).padStart(2,"0")}:${String(S.schedule.startM).padStart(2,"0")}`;
+  ($("endTime") as HTMLInputElement).value = `${String(S.schedule.endH).padStart(2,"0")}:${String(S.schedule.endM).padStart(2,"0")}`;
+  ($("salaryInput") as HTMLInputElement).value = String(S.salary || "");
+  document.querySelectorAll("#otRateRow .seg-btn").forEach(el => {
+    const b = el as HTMLElement;
     b.classList.toggle("on", Number(b.dataset.rate) === S.otRate);
     b.onclick = () => { S.otRate = Number(b.dataset.rate); save(); syncSettingsUI(); render(); };
   });
   syncSkinUI();
   syncCalUI();
 }
-$("startTime").onchange = e => { const [h,m] = e.target.value.split(":").map(Number); S.schedule.startH=h; S.schedule.startM=m; save(); render(); };
-$("endTime").onchange = e => { const [h,m] = e.target.value.split(":").map(Number); S.schedule.endH=h; S.schedule.endM=m; save(); render(); };
-$("salaryInput").onchange = e => { S.salary = Math.max(0, Number(e.target.value) || 0); save(); render(); };
+$("startTime").onchange = e => { const [h,m] = (e.target as HTMLInputElement).value.split(":").map(Number); S.schedule.startH=h; S.schedule.startM=m; save(); render(); };
+$("endTime").onchange = e => { const [h,m] = (e.target as HTMLInputElement).value.split(":").map(Number); S.schedule.endH=h; S.schedule.endM=m; save(); render(); };
+$("salaryInput").onchange = e => { S.salary = Math.max(0, Number((e.target as HTMLInputElement).value) || 0); save(); render(); };
 
-function setOv(v) { const k = dayKey(now()); v ? S.overrides[k] = v : delete S.overrides[k]; save(); render(); }
-$("ovOvertime").onclick = () => setOv({ type: "overtime", minutes: 120 });
-$("ovHoliday").onclick = () => setOv({ type: "holiday" });
-$("ovLeave").onclick = () => setOv({ type: "leave" });
+function setOv(v: DayOverride | null) { const k = dayKey(now()); v ? S.overrides[k] = v : delete S.overrides[k]; save(); render(); }
+$("ovOvertime").onclick = () => setOv({ kind: "overtime", minutes: 120 });
+$("ovHoliday").onclick = () => setOv({ kind: "holiday" });
+$("ovLeave").onclick = () => setOv({ kind: "leave" });
 $("ovClear").onclick = () => setOv(null);
 
 /* ---- 演示时间机 ---- */
-function monday(base) { const d = startOfDay(base); return new Date(d.getTime() - ((base.getDay()+6)%7) * DAY_MS); }
-const PRESETS = {
-  "wed-noon": b => { const m = monday(b); m.setDate(m.getDate()+2); m.setHours(13,30,0,0); return m; },
-  "fri-1700": b => { const m = monday(b); m.setDate(m.getDate()+4); m.setHours(17,0,0,0); return m; },
-  "sat-noon": b => { const m = monday(b); m.setDate(m.getDate()+5); m.setHours(11,0,0,0); return m; },
+function monday(base: Date): Date { const d = startOfDay(base); return new Date(d.getTime() - ((base.getDay()+6)%7) * DAY_MS); }
+const PRESETS: Record<string, (b: Date) => Date> = {
+  "wed-noon": (b: Date) => { const m = monday(b); m.setDate(m.getDate()+2); m.setHours(13,30,0,0); return m; },
+  "fri-1700": (b: Date) => { const m = monday(b); m.setDate(m.getDate()+4); m.setHours(17,0,0,0); return m; },
+  "sat-noon": (b: Date) => { const m = monday(b); m.setDate(m.getDate()+5); m.setHours(11,0,0,0); return m; },
 };
-document.querySelectorAll("[data-sim]").forEach(btn => {
+document.querySelectorAll("[data-sim]").forEach(el => {
+  const btn = el as HTMLElement;
   btn.onclick = () => {
     document.querySelectorAll("[data-sim]").forEach(x => x.classList.remove("on"));
-    if (btn.dataset.sim === "real") sim = null;
-    else { btn.classList.add("on"); const d = PRESETS[btn.dataset.sim](new Date()); sim = { base: d.getTime(), setAt: Date.now() }; }
+    const key = btn.dataset.sim || "";
+    if (key === "real") sim = null;
+    else { btn.classList.add("on"); const d = PRESETS[key](new Date()); sim = { base: d.getTime(), setAt: Date.now() }; }
     render();
   };
 });
@@ -1073,11 +1159,12 @@ function showOb() {
 
   // 休息模式选择（obStep=1）—— 选好立刻落到 S.schedule.workdays
   if (obStep === 1) {
-    document.querySelectorAll("#obRestRow .rest-pick").forEach(b => {
+    document.querySelectorAll("#obRestRow .rest-pick").forEach(el => {
+      const b = el as HTMLElement;
       b.onclick = () => {
         document.querySelectorAll("#obRestRow .rest-pick").forEach(x => x.classList.remove("on"));
         b.classList.add("on");
-        obRest = b.dataset.rest;
+        obRest = b.dataset.rest ?? "double";
         const preset = REST_PRESETS[obRest];
         if (preset && preset.workdays) S.schedule.workdays = [...preset.workdays];
         S.restMode = obRest;
@@ -1088,7 +1175,8 @@ function showOb() {
   }
 
   if (obStep === 3) {
-    document.querySelectorAll("#obRateRow .seg-btn").forEach(b => {
+    document.querySelectorAll("#obRateRow .seg-btn").forEach(el => {
+      const b = el as HTMLElement;
       b.onclick = () => {
         document.querySelectorAll("#obRateRow .seg-btn").forEach(x => x.classList.remove("on"));
         b.classList.add("on"); obRate = Number(b.dataset.rate);
@@ -1127,11 +1215,11 @@ function showOb() {
   }
   $("obNext").onclick = () => {
     if (obStep === 0) {
-      const [sh, sm] = $("obStart").value.split(":").map(Number);
-      const [eh, em] = $("obEnd").value.split(":").map(Number);
+      const [sh, sm] = ($("obStart") as HTMLInputElement).value.split(":").map(Number);
+      const [eh, em] = ($("obEnd") as HTMLInputElement).value.split(":").map(Number);
       S.schedule.startH = sh; S.schedule.startM = sm; S.schedule.endH = eh; S.schedule.endM = em;
     } else if (obStep === 2) {
-      S.salary = Math.max(0, Number($("obSalary").value) || 0);
+      S.salary = Math.max(0, Number(($("obSalary") as HTMLInputElement).value) || 0);
     }
     save(); obStep++; showOb();
   };
@@ -1141,7 +1229,7 @@ function showOb() {
 
 /* ============ 启动 & 省电调度 ============ */
 // 只在窗口可见时渲染；摸鱼才需要 47ms 毫秒级刷新，平时 1s 足够
-let renderTimer = 0;
+let renderTimer: ReturnType<typeof setTimeout> | number = 0;
 const isVisible = () => document.visibilityState === "visible";
 
 function loopRender() {
@@ -1152,7 +1240,7 @@ function loopRender() {
   renderTimer = setTimeout(loopRender, moyuMs(now()).active ? 47 : 1000);
 }
 
-function setAwake(awake) {
+function setAwake(awake: boolean) {
   if (awake) {
     document.body.classList.remove("paused");
     if (!renderTimer) loopRender();
@@ -1170,7 +1258,7 @@ setAwake(isVisible());
 document.addEventListener("visibilitychange", () => setAwake(isVisible()));
 // 托盘显示/隐藏窗口时由 Rust 发事件，精确控制暂停
 if (window.__TAURI__ && window.__TAURI__.event) {
-  window.__TAURI__.event.listen("wm:visibility", e => setAwake(!!e.payload));
+  window.__TAURI__!.event!.listen!("wm:visibility", e => setAwake(!!e.payload));
 }
 
 /* ============ 自动更新 ============
@@ -1207,12 +1295,12 @@ async function runUpdateCheck(manual = false) {
     setBubble("请手动退出并重新打开 App 完成更新");
   } catch (e) {
     console.warn("[updater] failed", e);
-    if (manual) setBubble("更新失败：" + (e.message || "网络问题"));
+    if (manual) setBubble("更新失败：" + ((e as Error).message || "网络问题"));
   }
 }
 // 托盘菜单的"检查更新…"
 if (window.__TAURI__?.event) {
-  window.__TAURI__.event.listen("wm:check-update", () => runUpdateCheck(true));
+  window.__TAURI__!.event!.listen!("wm:check-update", () => runUpdateCheck(true));
 }
 // 启动后后台偷偷 check 一次（等 UI 初始化完 10 秒，给网络点时间）
 if (window.__TAURI__) setTimeout(() => runUpdateCheck(false), 10000);

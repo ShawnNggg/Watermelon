@@ -16,7 +16,7 @@
       {
         "label": "main",
         "title": "下班啦",
-        "width": 300,
+        "width": 340,
         "height": 380,
         "minWidth": 280,
         "minHeight": 200,
@@ -29,7 +29,7 @@
       }
     ],
     "security": {
-      "csp": null
+      "csp": "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: asset: http://asset.localhost; connect-src 'self' https://api.jiejiariapi.com asset: http://asset.localhost http://127.0.0.1:1420 ws://127.0.0.1:1420; font-src 'self' data:; worker-src 'self' blob:; media-src 'self' blob: asset: http://asset.localhost;"
     }
   },
   "bundle": {

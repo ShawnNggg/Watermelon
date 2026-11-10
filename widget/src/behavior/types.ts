@@ -2,15 +2,34 @@
 
 /** 桌宠 action，与 SVG .widget[data-act="xxx"] 的 CSS 选择器一致 */
 export type PetAction =
-  | "typing"        // 敲键盘搬砖
-  | "present"       // 开会展示
-  | "scolded"       // 挨骂
+  // —— 搬砖 ——
+  | "typing"        // 敲键盘
+  | "present"       // 站着做汇报
+  | "scolded"       // 挨骂发抖
   | "dozing"        // 打瞌睡
   | "phone"         // 打电话
-  | "melon"         // 吃西瓜摸鱼
+  | "coffee"        // 喝茶续命
+  | "stretch"       // 伸懒腰
+  | "think"         // 卡需求发呆
+  | "read"          // 看文档
+  | "write"         // 记笔记
+  | "music"         // 戴耳机听歌
+  | "meeting"       // 开无效会议
+  | "sigh"          // 无声叹气
+  // —— 摸鱼 ——
+  | "melon"         // 吃西瓜
   | "toilet"        // 带薪蹲坑
+  | "scroll"        // 刷手机
+  | "snack"         // 偷吃零食
+  | "nap"           // 趴桌小睡
+  // —— 加班 ——
   | "overtime"      // 加班崩溃
+  | "crunch"        // 疯狂赶工
+  | "despair"       // 绝望发呆
+  // —— 下班 / 休息 ——
   | "happy"         // 下班蹦跶
+  | "dance"         // 开心跳舞
+  | "wag"           // 摇尾巴庆祝
   | "sleep";        // 呼呼大睡
 
 /** Behavior 层看到的"心情" —— 从 Domain CountdownState 映射过来 */

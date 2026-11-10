@@ -9,20 +9,18 @@ import type {
 /**
  * Mood → 候选 action 列表（权重相等时用 pickDistinct 随机 + 防重复）
  *
- * 与 index.html PET_ACTS 一一对应：
- *   working:   随机挑 typing/present/scolded/dozing/phone
- *   moyu:      melon/toilet
- *   overtime:  固定 overtime
- *   happy:     固定 happy
- *   rest:      固定 sleep
- *   beforeWork: 固定 dozing
+ * 与 index.html 的 `[data-act="xxx"]` 选择器一一对应，共 25 个动作：
+ *   working 13 · moyu 5 · overtime 3 · happy 3 · rest 1（dozing 与 beforeWork 共用）
  */
-const ACTIONS_BY_MOOD: Record<Mood, readonly PetAction[]> = {
+export const ACTIONS_BY_MOOD: Record<Mood, readonly PetAction[]> = {
   beforeWork: ["dozing"],
-  working: ["typing", "present", "scolded", "dozing", "phone"],
-  moyu: ["melon", "toilet"],
-  overtime: ["overtime"],
-  happy: ["happy"],
+  working: [
+    "typing", "present", "scolded", "dozing", "phone", "coffee", "stretch",
+    "think", "read", "write", "music", "meeting", "sigh",
+  ],
+  moyu: ["melon", "toilet", "scroll", "snack", "nap"],
+  overtime: ["overtime", "crunch", "despair"],
+  happy: ["happy", "dance", "wag"],
   rest: ["sleep"],
 };
 
@@ -51,11 +49,11 @@ export class BehaviorEngine {
   private lastAction: PetAction | null = null;
   private cooldownUntil = 0;   // epoch ms；冷却期内相同 mood 不再随机换 action
 
-  /** 两次轮换之间的间隔（ms）—— 与现有 6.5-10s 对齐 */
-  readonly ROTATE_INTERVAL_MS = 7_500;
+  /** 两次轮换之间的间隔（ms）—— 2 分钟换一个动作 */
+  readonly ROTATE_INTERVAL_MS = 120_000;
 
-  /** action 冷却（ms）—— 同一 action 5s 内不再被 pick */
-  readonly ACTION_COOLDOWN_MS = 5_000;
+  /** action 冷却（ms）—— 冷却内同一 mood 保持当前动作，到期才轮换 */
+  readonly ACTION_COOLDOWN_MS = 120_000;
 
   /**
    * 每帧 / 每次 render 调用：根据快照挑选当前 action。
@@ -149,6 +147,16 @@ export class BehaviorEngine {
         return { action, oneshots: [], actionChanged: changed };
       }
     }
+  }
+
+  /** 点击小狗：立刻换一个当前 mood 下的动作（跳过冷却） */
+  next(snap: BehaviorSnapshot, now: number = Date.now()): BehaviorOutput {
+    const mood = moodOf(snap);
+    const action = this.pickForMood(mood, now, true);
+    this.lastMood = mood;
+    const changed = action !== this.lastAction;
+    this.lastAction = action;
+    return { action, oneshots: [], actionChanged: changed };
   }
 
   /** 重置所有内部状态 —— 测试或重载时用 */

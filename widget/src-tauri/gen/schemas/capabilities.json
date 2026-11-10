@@ -1,1 +1,1 @@
-{"default":{"identifier":"default","description":"桌面挂件默认能力","local":true,"windows":["main"],"permissions":["core:default","core:window:allow-start-dragging","updater:default"]}}
+{"default":{"identifier":"default","description":"桌面挂件默认能力","local":true,"windows":["main"],"permissions":["core:default","core:window:allow-start-dragging","updater:default","store:default"]}}
