@@ -84,15 +84,15 @@ describe("BehaviorEngine — 基础 tick", () => {
     expect(ACTIONS_BY_MOOD.happy).toContain(eng.tick(HAPPY).action);
   });
 
-  it("rest tick → 固定 sleep", () => {
-    expect(eng.tick(REST).action).toBe("sleep");
+  it("rest tick → 从休息动作池里 pick 一个", () => {
+    expect(ACTIONS_BY_MOOD.rest).toContain(eng.tick(REST).action);
   });
 
   it("beforeWork tick → 固定 dozing", () => {
     expect(eng.tick(BEFORE_WORK).action).toBe("dozing");
   });
 
-  it("moyu tick → 从 melon/toilet/scroll/snack/nap 里 pick 一个", () => {
+  it("moyu tick → 从 scroll/snack 里 pick 一个", () => {
     const a = eng.tick(MOYU).action;
     expect(ACTIONS_BY_MOOD.moyu).toContain(a);
   });
@@ -258,8 +258,8 @@ describe("BehaviorEngine — reset", () => {
 
 /** 类型守卫测试 —— 编译时 PetAction 是联合类型 */
 const _ACTIONS: readonly PetAction[] = [
-  "typing", "present", "scolded", "dozing", "phone",
-  "melon", "toilet", "overtime", "happy", "sleep",
+  "typing", "scolded", "dozing", "phone",
+  "scroll", "snack", "overtime", "happy", "wag",
 ];
 const _MOODS: readonly Mood[] = [
   "beforeWork", "working", "moyu", "overtime", "happy", "rest",

@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="Laptop computer">
+<title>Laptop computer</title>
+<g stroke="#352923" stroke-width="8" stroke-linecap="round" stroke-linejoin="round">
+
+  <rect x="116" y="112" width="280" height="206" rx="16" fill="#352923"/>
+  <rect x="132" y="128" width="248" height="174" rx="7" fill="#8FC9E8" stroke="none"/>
+  <path d="M94 329 L418 329 L450 368 Q453 380 438 380 L74 380 Q59 380 62 368 Z" fill="#F8D49A"/>
+  <path d="M212 342 L300 342" fill="none" stroke="#E9AD63" stroke-width="7"/>
+  <circle cx="256" cy="119" r="3" fill="#FFFDF8" stroke="none"/>
+
+</g>
+</svg>

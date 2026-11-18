@@ -3,9 +3,15 @@
 import { resolveDay as resolveDayPure } from "./domain";
 import type { DayOverride, DayOverrides, HolidayInfo, MoyuSession, RestReason, WorkdayResult, WorkSchedule } from "./domain";
 import { BehaviorEngine, moodOf } from "./behavior";
-import type { BehaviorSnapshot, PetAction } from "./behavior";
+import type { BehaviorOutput, BehaviorSnapshot, PetAction } from "./behavior";
+import { ACTIONS } from "./avatar";
+import { createRenderer, loadRendererKind, saveRendererKind } from "./renderer";
+import type { DogRenderer } from "./renderer";
+import { GamesPanel } from "./games";
 
 const be = new BehaviorEngine();
+/** 渲染器（Legacy SVG / Rive 双实现，缺 .riv 自动回退） */
+let renderer: DogRenderer | null = null;
 // Tauri 真挂件模式：透明白底 + 隐藏演示元素
 if (window.__TAURI__) document.body.classList.add("in-app");
 
@@ -749,30 +755,20 @@ const LINES = {
 /* ============ 桌宠动作调度 ============ */
 const ACT_LINES: Record<string, string[]> = {
   typing: ["噼里啪啦一顿敲，其实在斗图", "键盘冒火星，产出为零", "这个需求很简单.jpg"],
-  present: ["我简单讲两句（第 40 分钟）", "大家看这条曲线……它不乐观", "PPT 第 87 页，坚持住"],
   scolded: ["是是是，马上改（第 8 版）", "好的收到，问题都怪我", "耳朵已关闭，灵魂已下班"],
   dozing: ["我没睡，我在闭目思考", "眼皮：我先下班了", "zzz…啊！老板我在听！"],
   phone: ["喂您好，方案已发您邮箱（没发）", "好好好，都可以谈", "客户说要五彩斑斓的黑"],
   coffee: ["第三杯了，心跳有点快", "咖啡续命，命是续上了，人还是困", "这杯喝完就干活（骗自己）"],
   stretch: ["伸个懒腰，骨头都在抗议", "站起来走两步，假装很健康", "工位待久了，腰已经不是我的了"],
   think: ["这个需求……为什么？", "想不明白，先发会儿呆", "大脑正在加载，请稍候"],
-  read: ["文档三百页，重点一句话", "看完了，等于没看", "已阅，不懂，但大受震撼"],
-  write: ["记笔记：会后……（忘了）", "字写得挺好看，没人看", "周报憋了半天，就两句"],
-  music: ["戴上耳机，世界与我无关", "这歌单是打工人的精神止痛药", "音量 100%，老板也听不见"],
-  meeting: ["这个会，可以拉个会讨论", "会议结论：下次再开个会", "摄像头关了，人在被窝"],
-  sigh: ["唉……（此处省略一万字）", "深呼吸，还能撑", "叹气不扣钱，多叹两口"],
-  melon: ["吧唧吧唧…这瓜真甜", "摸鱼赚的钱，才是赚的钱", "帮我盯着点老板，汪"],
-  toilet: ["厕所，打工人最后的净土", "带薪蹲坑，赚到", "刷完这条视频就回去…真的"],
   scroll: ["就刷五分钟（已过两小时）", "手指在划，灵魂在飘", "这条视频我必须看完……下一条也是"],
   snack: ["偷吃一口，快乐加倍", "零食藏抽屉，老板找不到", "下午三点的糖分，是刚需"],
-  nap: ["趴五分钟（其实半小时）", "工位午睡，姿势越怪睡得越香", "老板路过我就假装看屏幕"],
   overtime: ["人在工位，魂在床位", "这班加得，狗都困了", "加班费结一下？（灵魂拷问）"],
   crunch: ["Deadline 在前，键盘冒烟", "手速拉满，脑速归零", "改完这版就发（第 12 版）"],
   despair: ["这活儿干不完，根本干不完", "看着屏幕，屏幕看着我", "算了，先发会儿呆吧"],
   happy: ["下班不积极，思想有问题", "今日份的班就上到这了", "溜了溜了，瓜都等急了"],
   dance: ["下班了，舞可以跳起来了", "快乐到模糊", "老板不在，怎么开心怎么来"],
   wag: ["尾巴已经摇成螺旋桨", "今天没加班，尾巴表示同意", "开心得语无伦次，汪！"],
-  sleep: ["今天不上班，瓜随便吃", "呼……zzz", "睡到自然醒，人生赢家"],
 };
 // BehaviorEngine 单例，tick() 取代旧 PET_ACTS 随机挑选
 let petMood = "", petAct: PetAction | "" = "", petTimer: ReturnType<typeof setTimeout> | number = 0;
@@ -789,25 +785,30 @@ function rotateAct() {
   // 定时轮换：用缓存的 snap 再 tick 一次，BehaviorEngine 内部 cooldown 过期后会返回新 action
   if (_lastSnap) {
     const out = be.tick(_lastSnap);
-    if (out.action !== petAct) {
-      petAct = out.action;
-      $("widget").dataset.act = out.action;
-      setBubble(petLine());
-    }
+    if (out.action !== petAct) applyOutput(out, moodOf(_lastSnap));
   }
   const intervalMs = be.ROTATE_INTERVAL_MS || 120000;
   petTimer = setTimeout(rotateAct, intervalMs);
 }
+
+/** 引擎输出 → DOM + 渲染器（Legacy / Rive 统一入口） */
+function applyOutput(out: BehaviorOutput, mood: string) {
+  petMood = mood;
+  petAct = out.action;
+  $("widget").dataset.act = out.action;
+  renderer?.setAction(out.action);
+  renderer?.setIntent?.(out.intent, out.action, out.defId);
+  for (const name of out.oneshots) renderer?.trigger(name);
+  setBubble(petLine());
+}
+
 // 桥接：从 render() 算出的状态组装 BehaviorSnapshot，交给 BehaviorEngine
 function petSetMood(snap: BehaviorSnapshot) {
   _lastSnap = snap;
   const out = be.tick(snap);
   const mood = moodOf(snap);
   if (mood !== petMood || out.action !== petAct) {
-    petMood = mood;
-    petAct = out.action;
-    $("widget").dataset.act = out.action;
-    setBubble(petLine());
+    applyOutput(out, mood);
     clearTimeout(petTimer);
     rotateAct();
   }
@@ -897,10 +898,14 @@ function render() {
   ringPct.textContent = Math.round(progress * 100) + "%";
 
   // 桌宠 + status chip —— 用 BehaviorSnapshot 桥接到 BehaviorEngine
-  const behSnap = {
+  const behSnap: BehaviorSnapshot = {
     phase: st.type,                 // "beforeWork" | "working" | "offWork" | "rest"
     moyuActive: !!my.active,
     overtimeMin: st.type === "working" ? st.overtimeMin : 0,
+    minutesToOffwork:
+      st.type === "working" ? Math.max(0, Math.floor(st.remaining / 60000)) : null,
+    slackMinutesToday: Math.floor(my.ms / 60000),
+    dateFlags: [],
   };
   petSetMood(behSnap);
   $("statusChip").textContent = chip[0];
@@ -1004,17 +1009,105 @@ $("mainBtn").onclick = toggleMoyu;
 function petNext() {
   if (!_lastSnap) return;
   const out = be.next(_lastSnap);
-  petMood = moodOf(_lastSnap);
-  petAct = out.action;
-  $("widget").dataset.act = out.action;
-  setBubble(petLine());
+  applyOutput(out, moodOf(_lastSnap));
   clearTimeout(petTimer);
   rotateAct();
 }
-$("dogSvg").onclick = petNext;
 
-$("todoToggle").onclick = () => { $("todoDrawer").classList.toggle("open"); $("gearDrawer").classList.remove("open"); autoFit(); };
-$("gearToggle").onclick = () => { $("gearDrawer").classList.toggle("open"); $("todoDrawer").classList.remove("open"); syncSettingsUI(); autoFit(); };
+/** 事件驱动：把一次手势/外部事件喂给引擎，并立刻应用到 UI */
+function petEvent(
+  event: Parameters<typeof be.handle>[0],
+) {
+  if (!_lastSnap) return;
+  const out = be.handle(event, _lastSnap);
+  applyOutput(out, moodOf(_lastSnap));
+  clearTimeout(petTimer);
+  rotateAct();
+}
+
+// —— 手势：单击换动作 / 双击 / 长按 0.6s / 拖拽 ——
+(() => {
+  const dog = $("dogSvg");
+  let pressTimer: ReturnType<typeof setTimeout> | 0 = 0;
+  let downAt = { x: 0, y: 0 };
+  let dragging = false;
+  let longPressed = false;
+
+  dog.addEventListener("pointerdown", (e) => {
+    downAt = { x: e.clientX, y: e.clientY };
+    dragging = false;
+    longPressed = false;
+    pressTimer = setTimeout(() => {
+      longPressed = true;
+      petEvent({ kind: "longPress" });
+    }, 600);
+  });
+
+  dog.addEventListener("pointermove", (e) => {
+    if (!downAt.x && !downAt.y) return;
+    if (!dragging && Math.hypot(e.clientX - downAt.x, e.clientY - downAt.y) > 8) {
+      dragging = true;
+      clearTimeout(pressTimer);
+      pressTimer = 0;
+      petEvent({ kind: "dragStart" });
+      renderer?.trigger("drag");
+    }
+  });
+
+  dog.addEventListener("pointerup", () => {
+    clearTimeout(pressTimer);
+    pressTimer = 0;
+    if (dragging) {
+      dragging = false;
+      petEvent({ kind: "dragEnd" });
+      renderer?.trigger("dragEnd");
+    }
+  });
+
+  dog.addEventListener("pointercancel", () => {
+    clearTimeout(pressTimer);
+    pressTimer = 0;
+    if (dragging) { dragging = false; petEvent({ kind: "dragEnd" }); renderer?.trigger("dragEnd"); }
+  });
+
+  // 单击：长按/拖拽之后不再触发换动作
+  dog.addEventListener("click", (e) => {
+    if (longPressed) { longPressed = false; e.stopPropagation(); return; }
+    if (dragging) { dragging = false; return; }
+    petNext();
+  });
+
+  dog.addEventListener("dblclick", (e) => {
+    e.stopPropagation();
+    if (!longPressed) petEvent({ kind: "doubleTap" });
+  });
+})();
+
+/* ---- 摸鱼游戏（打字 / 俄罗斯方块 / 扫雷 / 数独） ---- */
+const games = new GamesPanel($("gmTabs"), $("gmBody"), autoFit);
+
+$("todoToggle").onclick = () => {
+  $("todoDrawer").classList.toggle("open");
+  $("gearDrawer").classList.remove("open");
+  $("gameDrawer").classList.remove("open");
+  games.hide();
+  autoFit();
+};
+$("gearToggle").onclick = () => {
+  $("gearDrawer").classList.toggle("open");
+  $("todoDrawer").classList.remove("open");
+  $("gameDrawer").classList.remove("open");
+  games.hide();
+  syncSettingsUI();
+  autoFit();
+};
+$("gameToggle").onclick = () => {
+  const open = $("gameDrawer").classList.toggle("open");
+  $("todoDrawer").classList.remove("open");
+  $("gearDrawer").classList.remove("open");
+  open ? games.show() : games.hide();
+  autoFit();
+};
 
 function renderTodos() {
   const ul = $("todoList"); ul.innerHTML = "";
@@ -1245,16 +1338,118 @@ function setAwake(awake: boolean) {
     document.body.classList.remove("paused");
     if (!renderTimer) loopRender();
     if (!petTimer && petMood) rotateAct(); // 恢复桌宠动作轮换
+    games.resume();                       // 恢复正在玩的摸鱼游戏
   } else {
     document.body.classList.add("paused");
     clearTimeout(renderTimer); renderTimer = 0;
     clearTimeout(petTimer); petTimer = 0;
+    games.pause();                        // 窗口不可见时暂停游戏计时/渲染
   }
 }
 
 applySkin(S.skin);
 renderTodos();
 setAwake(isVisible());
+
+/* ============ 渲染器初始化（Legacy / Rive） ============ */
+function initRenderer() {
+  // 默认就是 Rive（loadRendererKind 缺省返回 "rive"）；
+  // 只有用户显式切回「原生 SVG」时才完全不建渲染器，由 main.ts 自己操作 DOM。
+  if (loadRendererKind() !== "rive") {
+    renderer = null;
+    return;
+  }
+  try {
+    renderer = createRenderer("rive", {
+      rive: {
+        rivUrl: "/assets/dog.riv",
+        wasmUrl: "/assets/rive.wasm",
+        stateMachineName: "DogSM",
+      },
+    });
+    // 把当前动作同步进去（initRenderer 早于首次 render 时 petAct 为空）
+    if (petAct) renderer.setAction(petAct as PetAction);
+  } catch (e) {
+    console.warn("[main] renderer 初始化失败，继续用原生 DOM 渲染：", e);
+    renderer = null;
+  }
+}
+initRenderer();
+renderActionDebug();
+
+/* Rive 真实加载结果回显 —— 避免"切了但看起来没变"的困惑 */
+function reportRiveState() {
+  const el = document.getElementById("riveAssetState");
+  if (!el) return;
+  if (loadRendererKind() !== "rive") {
+    el.textContent = "";
+    return;
+  }
+  // boot 是异步的（拉 wasm + riv），给 1.5s 后检查实际状态
+  setTimeout(() => {
+    const active = !!(renderer as { isActive?: boolean } | null)?.isActive;
+    el.style.color = active ? "var(--flesh)" : "var(--text-dim)";
+    el.textContent = active
+      ? "Rive 已加载 ✓"
+      : "Rive 未加载（缺 assets/dog.riv 或状态机名不是 DogSM），当前用原生 SVG";
+  }, 1500);
+}
+reportRiveState();
+
+/** 设置面板 → 动作库调试列表（50 个动作，点一下立刻预览） */
+function renderActionDebug() {
+  const host = document.getElementById("actionGrid");
+  if (!host) return;
+  host.innerHTML = "";
+  for (const def of ACTIONS) {
+    const btn = document.createElement("button");
+    btn.className = "act-btn";
+    btn.dataset.id = String(def.id);
+    btn.title = `${def.key} · ${def.type} · p${def.priority}`;
+    btn.textContent = `${def.id}`;
+    btn.onclick = () => {
+      const name = document.getElementById("actNow");
+      if (!_lastSnap) {
+        if (name) name.textContent = "状态尚未就绪，稍后再试";
+        return;
+      }
+      try {
+        const out = be.preview(def.id, _lastSnap);
+        // 同一个 data-act 不会重播动画 —— 先摘掉再设回去，强制重放
+        const w = $("widget");
+        if (w.dataset.act === out.action) {
+          delete w.dataset.act;
+          void w.offsetWidth;
+        }
+        applyOutput(out, moodOf(_lastSnap));
+        // 不要立刻 tick：preview 已经重置了冷却，这里只接上下一轮定时
+        clearTimeout(petTimer);
+        petTimer = setTimeout(rotateAct, be.ROTATE_INTERVAL_MS || 120000);
+        if (name) name.textContent = `${def.id} · ${def.key}（${out.action}）`;
+      } catch (e) {
+        if (name) name.textContent = `预览失败：${String(e)}`;
+      }
+    };
+    host.appendChild(btn);
+  }
+}
+
+/** 渲染器切换按钮 —— 保存后刷新页面生效 */
+function bindRendererSwitch() {
+  const legacyBtn = document.getElementById("rendererLegacy");
+  const riveBtn = document.getElementById("rendererRive");
+  if (!legacyBtn || !riveBtn) return;
+  const paint = () => {
+    const kind = loadRendererKind();
+    legacyBtn.classList.toggle("on", kind !== "rive");
+    riveBtn.classList.toggle("on", kind === "rive");
+  };
+  legacyBtn.onclick = () => { saveRendererKind("legacy"); paint(); location.reload(); };
+  riveBtn.onclick = () => { saveRendererKind("rive"); paint(); location.reload(); };
+  paint();
+}
+bindRendererSwitch();
+
 document.addEventListener("visibilitychange", () => setAwake(isVisible()));
 // 托盘显示/隐藏窗口时由 Rust 发事件，精确控制暂停
 if (window.__TAURI__ && window.__TAURI__.event) {

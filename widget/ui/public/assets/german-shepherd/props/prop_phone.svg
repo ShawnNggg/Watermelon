@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="Smartphone">
+<title>Smartphone</title>
+<g stroke="#352923" stroke-width="8" stroke-linecap="round" stroke-linejoin="round">
+
+  <rect x="178" y="68" width="156" height="310" rx="25" fill="#352923"/>
+  <rect x="191" y="92" width="130" height="252" rx="13" fill="#8FC9E8" stroke="none"/>
+  <rect x="226" y="78" width="60" height="5" rx="3" fill="#F8D49A" stroke="none"/>
+  <circle cx="256" cy="361" r="7" fill="#F8D49A" stroke="none"/>
+  <circle cx="256" cy="145" r="25" fill="#FFFDF8" stroke="none"/>
+  <path d="M225 218 Q256 184 287 218" fill="none" stroke="#E9AD63" stroke-width="12"/>
+
+</g>
+</svg>

@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="Computer mouse">
+<title>Computer mouse</title>
+<g stroke="#352923" stroke-width="8" stroke-linecap="round" stroke-linejoin="round">
+
+  <path d="M256 102 C193 102 168 146 168 219 L168 291 C168 350 203 381 256 381 C309 381 344 350 344 291 L344 219 C344 146 319 102 256 102 Z" fill="#FFF3DC"/>
+  <path d="M256 110 L256 205" fill="none" stroke="#352923" stroke-width="7"/>
+  <path d="M256 120 L256 156" fill="none" stroke="#E9AD63" stroke-width="7"/>
+
+</g>
+</svg>

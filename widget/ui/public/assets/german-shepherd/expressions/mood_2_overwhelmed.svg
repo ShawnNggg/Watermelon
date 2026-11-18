@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="mood_2_overwhelmed">
+  <title>mood_2_overwhelmed</title>
+  <g stroke="#352923" stroke-width="9" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M204 184 Q216 175 228 184 M284 184 Q296 175 308 184" fill="none" stroke-width="6"/>
+    <path d="M238 249 Q256 235 274 249 Q256 267 238 249 Z" fill="#352923"/>
+    <path d="M330 190 C340 200 337 210 329 216 C322 209 322 201 330 190 Z" fill="#70B9E8" stroke="none"/>
+    <path d="M175 110 L167 96 M185 102 L182 85 M327 110 L335 96" fill="none" stroke="#E9AD63" stroke-width="5"/>
+  </g>
+</svg>

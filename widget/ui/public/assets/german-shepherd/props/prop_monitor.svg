@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="Desktop monitor">
+<title>Desktop monitor</title>
+<g stroke="#352923" stroke-width="8" stroke-linecap="round" stroke-linejoin="round">
+
+  <rect x="90" y="82" width="332" height="230" rx="16" fill="#352923"/>
+  <rect x="108" y="100" width="296" height="194" rx="7" fill="#8FC9E8" stroke="none"/>
+  <path d="M256 312 L256 366 M196 370 L316 370" fill="none" stroke="#352923" stroke-width="16"/>
+  <path d="M140 150 L205 150 M140 177 L286 177 M140 204 L245 204" fill="none" stroke="#FFFDF8" stroke-width="8"/>
+  <path d="M284 245 L316 212 L342 229 L374 176" fill="none" stroke="#E9AD63" stroke-width="8"/>
+
+</g>
+</svg>

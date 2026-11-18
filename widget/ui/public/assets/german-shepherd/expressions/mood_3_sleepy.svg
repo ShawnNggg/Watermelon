@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="mood_3_sleepy">
+  <title>mood_3_sleepy</title>
+  <g stroke="#352923" stroke-width="9" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M204 190 Q218 201 231 190 M281 190 Q294 201 308 190" fill="none" stroke-width="6"/>
+    <path d="M244 247 Q256 251 268 247" fill="none" stroke-width="5"/>
+    <text x="350" y="130" font-family="Arial,sans-serif" font-size="28" font-weight="700" fill="#7A8CA5" stroke="none">Z</text>
+    <text x="372" y="105" font-family="Arial,sans-serif" font-size="20" font-weight="700" fill="#7A8CA5" stroke="none">z</text>
+  </g>
+</svg>

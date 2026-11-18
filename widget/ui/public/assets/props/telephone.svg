@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Watermelon 灰盒占位：telephone（Rive 导入用，可直接整体替换成正式素材） -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64"
+     fill="none" stroke="#8a8a8a" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round">
+  <title>telephone</title>
+  <path d="M12 42a8 8 0 0 1 4-10l8-4 6 10-6 4a18 18 0 0 0 8 8l4-6 10 6-4 8a8 8 0 0 1-10 4C18 58 10 50 12 42z" fill="#e8e8e8"/>
+</svg>

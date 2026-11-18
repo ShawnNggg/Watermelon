@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Watermelon 灰盒占位：sparkle（Rive 导入用，可直接整体替换成正式素材） -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64"
+     fill="none" stroke="#8a8a8a" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round">
+  <title>sparkle</title>
+  <path d="M32 6l4 18 18 4-18 4-4 18-4-18-18-4 18-4z" fill="#e8e8e8"/>
+  <path d="M48 42l2 6 6 2-6 2-2 6-2-6-6-2 6-2z" fill="#dcdcdc"/>
+</svg>

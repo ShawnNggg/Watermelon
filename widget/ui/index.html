@@ -131,36 +131,35 @@
 
   /* ============ 小狗动画系统（多形态多动作） ============ */
   .dog { width: 150px; height: 141px; overflow: visible; align-self: center; cursor: pointer; }
+  /* Rive 模式：canvas 叠在狗的位置，原生 SVG 让位（保留占位尺寸） */
+  body.rive-on #dogSvg { opacity: 0; }
+  #dog-rive { border-radius: 14px; }
   .dog * { transform-box: fill-box; }
 
   /* 常驻微动作 */
-  .tail { transform-origin: 0% 50%; animation: wag .65s ease-in-out infinite alternate; transition: transform .35s; }
+  /* 德国牧羊犬尾巴根部 (108, 127) */
+  .tail { transform-origin: 0% 95%; animation: wag .65s ease-in-out infinite alternate; transition: transform .35s; }
   @keyframes wag { from { transform: rotate(-10deg); } to { transform: rotate(16deg); } }
   .breath { transform-origin: 50% 90%; animation: breathe 2.6s ease-in-out infinite; }
   @keyframes breathe { 0%,100% { transform: scale(1,1); } 50% { transform: scale(1.02,.985); } }
   .eye { transform-origin: 50% 50%; animation: blink 4s infinite; }
   @keyframes blink { 0%,93%,100% { transform: scaleY(1); } 96% { transform: scaleY(.1); } }
   .gaze { transition: transform .35s; }
-  .head { transform-origin: 50% 85%; animation: tilt 9s ease-in-out infinite; }
+  /* 德国牧羊犬头部底部 (80, 87) */
+  .head { transform-origin: 50% 100%; animation: tilt 9s ease-in-out infinite; }
   @keyframes tilt { 0%,78%,100% { transform: rotate(0deg); } 84% { transform: rotate(-7deg); } 92% { transform: rotate(5deg); } }
-  .ear-l { transform-origin: 80% 20%; animation: earL 9s ease-in-out infinite; transition: transform .35s; }
-  .ear-r { transform-origin: 20% 20%; animation: earR 9s ease-in-out infinite; transition: transform .35s; }
+  /* 德国牧羊犬左耳根部 (59, 47) */
+  .ear-l { transform-origin: 40% 100%; animation: earL 9s ease-in-out infinite; transition: transform .35s; }
+  /* 德国牧羊犬右耳根部 (101, 47) */
+  .ear-r { transform-origin: 65% 100%; animation: earR 9s ease-in-out infinite; transition: transform .35s; }
   @keyframes earL { 0%,78%,100% { transform: rotate(0); } 84% { transform: rotate(-12deg); } 92% { transform: rotate(6deg); } }
   @keyframes earR { 0%,78%,100% { transform: rotate(0); } 84% { transform: rotate(-8deg); } 92% { transform: rotate(10deg); } }
-  .tongue { opacity: 0; transition: opacity .3s; }
-  .zzz, .heart, .crumb, .sweat, .snooze, .scold-mark { opacity: 0; }
+  .heart, .sweat, .snooze, .scold-mark { opacity: 0; }
   .paw-l, .paw-r { transition: opacity .25s; }
 
   /* 形态与道具切换 */
   .prop { opacity: 0; transition: opacity .3s; }
   .dog-sit { transition: opacity .3s; }
-  .dog-lie, .dog-stand, .dog-toilet { opacity: 0; transition: opacity .3s; }
-  .widget[data-act="present"] .dog-sit,
-  .widget[data-act="toilet"] .dog-sit,
-  .widget[data-act="sleep"] .dog-sit { opacity: 0; }
-  .widget[data-act="present"] .dog-stand,
-  .widget[data-act="toilet"] .dog-toilet,
-  .widget[data-act="sleep"] .dog-lie { opacity: 1; }
 
   /* 搬砖 · 敲键盘 / 加班共用笔记本 */
   .widget[data-act="typing"] .prop-laptop,
@@ -175,13 +174,6 @@
   .widget[data-act="typing"] .head { animation: typeHead 4.5s ease-in-out infinite; }
   @keyframes typeHead { 0%,100% { transform: rotate(2deg) translateY(1.5px); } 50% { transform: rotate(2.5deg) translateY(2.5px); } }
 
-  /* 搬砖 · 做汇报 */
-  .pointer-arm { transform-origin: 0% 100%; }
-  .widget[data-act="present"] .pointer-arm { animation: pointTap 2.8s ease-in-out infinite; }
-  @keyframes pointTap { 0%,100% { transform: rotate(0); } 30% { transform: rotate(-6deg); } 45% { transform: rotate(0); } 60% { transform: rotate(-6deg); } 75% { transform: rotate(0); } }
-  .widget[data-act="present"] .head-s { transform-origin: 50% 85%; animation: presentBob 2.8s ease-in-out infinite; }
-  @keyframes presentBob { 0%,100% { transform: rotate(0); } 40% { transform: rotate(2.5deg); } }
-  .widget[data-act="present"] .jaw,
   .widget[data-act="phone"] .jaw { transform-origin: 50% 0%; animation: talk .42s ease-in-out infinite; }
   @keyframes talk { 0%,100% { transform: scaleY(1); } 50% { transform: scaleY(1.8); } }
 
@@ -230,33 +222,11 @@
   .widget[data-act="phone"] .ear-r { animation: none; transform: rotate(-16deg); }
   .widget[data-act="phone"] .gaze { transform: translateY(-1px); }
 
-  /* 摸鱼 · 狗爪拿瓜 */
-  .prop-melon { transform-origin: 50% 50%; transition: opacity .3s, transform .5s cubic-bezier(.34,1.56,.64,1); }
-  .widget[data-act="melon"] .prop-melon { opacity: 1; transform: translate(26px,-34px) rotate(-18deg); }
-  .widget[data-act="melon"] .paw-l, .widget[data-act="melon"] .paw-r { opacity: 0; }
-  .widget[data-act="melon"] .head { animation: nom .55s ease-in-out infinite; }
-  @keyframes nom { 0%,100% { transform: rotate(3deg) translateY(0); } 50% { transform: rotate(3deg) translateY(2.5px); } }
-  .widget[data-act="melon"] .jaw { transform-origin: 50% 0%; animation: chew .55s ease-in-out infinite; }
-  @keyframes chew { 0%,100% { transform: scaleY(1); } 50% { transform: scaleY(1.9); } }
-  .widget[data-act="melon"] .tongue { opacity: 1; }
-  .widget[data-act="melon"] .tail { animation-duration: .32s; }
-  .widget[data-act="melon"] .ear-l, .widget[data-act="melon"] .ear-r { animation: none; }
-  .widget[data-act="melon"] .gaze { transform: translateY(-1.5px); }
-  .widget[data-act="melon"] .crumb { opacity: 1; animation: drop 1.1s ease-in infinite; }
-  .widget[data-act="melon"] .crumb.c2 { animation-delay: .55s; }
-  @keyframes drop { 0% { transform: translateY(0); opacity: 0; } 15% { opacity: 1; } 100% { transform: translateY(30px); opacity: 0; } }
 
-  /* 摸鱼 · 蹲坑刷手机 */
-  .widget[data-act="toilet"] .thumb { animation: swipe 2.4s ease-in-out infinite; }
-  @keyframes swipe { 0%,60%,100% { transform: translateY(0); } 72% { transform: translateY(-7px); } 84% { transform: translateY(-7px); } }
-  .widget[data-act="toilet"] .leg-l { transform-origin: 50% 0%; animation: swingL 1.2s ease-in-out infinite alternate; }
-  .widget[data-act="toilet"] .leg-r { transform-origin: 50% 0%; animation: swingR 1.2s ease-in-out infinite alternate; }
-  @keyframes swingL { from { transform: rotate(5deg); } to { transform: rotate(-5deg); } }
-  @keyframes swingR { from { transform: rotate(-5deg); } to { transform: rotate(5deg); } }
-  .widget[data-act="toilet"] .glow { opacity: .16; transition: opacity .5s; }
-  .widget[data-act="toilet"] .head-t { transform-origin: 50% 85%; animation: chuckle 4.2s ease-in-out infinite; }
-  @keyframes chuckle { 0%,82%,100% { transform: translateY(0); } 86% { transform: translateY(1.6px); } 90% { transform: translateY(0); } 94% { transform: translateY(1.6px); } }
-  .gaze-t { transform: translateY(3px); }
+
+  /* 咀嚼（snack 复用） */
+  @keyframes nom { 0%,100% { transform: rotate(3deg) translateY(0); } 50% { transform: rotate(3deg) translateY(2.5px); } }
+  @keyframes chew { 0%,100% { transform: scaleY(1); } 50% { transform: scaleY(1.9); } }
 
   /* 加班硬撑 */
   .widget[data-act="overtime"] .head { animation: nodOff 5s ease-in-out infinite; }
@@ -273,11 +243,10 @@
     70% { transform: translateY(-4px) scale(1,1); }
   }
   .widget[data-act="happy"] .tail { animation-duration: .22s; }
-  .widget[data-act="happy"] .tongue { opacity: 1; }
   .widget[data-act="happy"] .head { animation: shake .55s ease-in-out infinite; }
   @keyframes shake { 0%,100% { transform: rotate(-4deg); } 50% { transform: rotate(4deg); } }
-  .widget[data-act="happy"] .ear-l { transform-origin: 80% 20%; animation: flapL .55s ease-in-out infinite; }
-  .widget[data-act="happy"] .ear-r { transform-origin: 20% 20%; animation: flapR .55s ease-in-out infinite; }
+  .widget[data-act="happy"] .ear-l { transform-origin: 40% 100%; animation: flapL .55s ease-in-out infinite; }
+  .widget[data-act="happy"] .ear-r { transform-origin: 65% 100%; animation: flapR .55s ease-in-out infinite; }
   @keyframes flapL { 0%,100% { transform: rotate(-6deg); } 50% { transform: rotate(10deg); } }
   @keyframes flapR { 0%,100% { transform: rotate(6deg); } 50% { transform: rotate(-10deg); } }
   .widget[data-act="happy"] .heart { opacity: 1; animation: floatUp 1.6s ease-out infinite; }
@@ -285,14 +254,6 @@
   .widget[data-act="happy"] .heart.h3 { animation-delay: 1.1s; }
   @keyframes floatUp { 0% { transform: translateY(0) scale(.4); opacity: 0; } 25% { opacity: 1; } 100% { transform: translateY(-46px) scale(1); opacity: 0; } }
 
-  /* 周末趴睡 */
-  .widget[data-act="sleep"] .zzz { opacity: 1; animation: zfloat 2.2s ease-in-out infinite; }
-  .widget[data-act="sleep"] .zzz.z2 { animation-delay: .7s; font-size: 15px; }
-  .widget[data-act="sleep"] .zzz.z3 { animation-delay: 1.4s; font-size: 19px; }
-  @keyframes zfloat { 0% { transform: translate(0,0) scale(.6); opacity: 0; } 30% { opacity: 1; } 100% { transform: translate(14px,-30px) scale(1.15); opacity: 0; } }
-  .widget[data-act="sleep"] .breath-lie { transform-origin: 50% 100%; animation: sleepBreathe 3.4s ease-in-out infinite; }
-  @keyframes sleepBreathe { 0%,100% { transform: scale(1,1); } 50% { transform: scale(1.035,.96); } }
-  .widget[data-act="sleep"] .tail-lie { transform-origin: 0% 50%; animation: wag 3s ease-in-out infinite alternate; }
 
   /* ============ 新增动作（25 动作库） ============ */
   /* 喝咖啡 */
@@ -315,49 +276,15 @@
   .widget[data-act="stretch"] .tail { animation-duration: 1.8s; }
 
   /* 发呆想不明白 */
-  .widget[data-act="think"] .think-mark { opacity: 1; animation: markFloat 3s ease-in-out infinite; }
-  @keyframes markFloat { 0%,100% { transform: translateY(0) scale(.9); opacity: .5; } 50% { transform: translateY(-4px) scale(1.1); opacity: 1; } }
   .widget[data-act="think"] .gaze { transform: translate(3px,-3px); }
   .widget[data-act="think"] .head { animation: tiltThink 4.5s ease-in-out infinite; }
   @keyframes tiltThink { 0%,100% { transform: rotate(0); } 35% { transform: rotate(-8deg); } 70% { transform: rotate(6deg); } }
 
-  /* 看文档 */
-  .widget[data-act="read"] .prop-book { opacity: 1; }
-  .widget[data-act="read"] .paw-l, .widget[data-act="read"] .paw-r { opacity: 0; }
-  .widget[data-act="read"] .head { animation: readBob 3.6s ease-in-out infinite; }
-  @keyframes readBob { 0%,100% { transform: rotate(0) translateY(2px); } 50% { transform: rotate(0) translateY(5px); } }
-  .widget[data-act="read"] .gaze { transform: translateY(3px); }
-  .widget[data-act="read"] .tail { animation-duration: 2.2s; }
 
-  /* 记笔记 */
-  .widget[data-act="write"] .prop-paper { opacity: 1; }
-  .widget[data-act="write"] .paw-l { opacity: 0; }
-  .widget[data-act="write"] .paw-r { animation: writeTap .6s ease-in-out infinite alternate; }
-  @keyframes writeTap { from { transform: translate(-2px,-2px); } to { transform: translate(3px,1px); } }
-  .widget[data-act="write"] .gaze { transform: translate(1px,3px); }
 
-  /* 听歌 */
-  .widget[data-act="music"] .prop-notes { opacity: 1; }
-  .widget[data-act="music"] .note { animation: noteFloat 2.6s ease-in-out infinite; }
-  .widget[data-act="music"] .note.n2 { animation-delay: 1.2s; }
-  @keyframes noteFloat { 0% { opacity: 0; transform: translate(0,6px) scale(.7); } 30% { opacity: 1; } 100% { opacity: 0; transform: translate(8px,-16px) scale(1.1); } }
-  .widget[data-act="music"] .head { animation: groove 1.1s ease-in-out infinite; }
-  @keyframes groove { 0%,100% { transform: rotate(-2deg); } 50% { transform: rotate(2deg); } }
-  .widget[data-act="music"] .tail { animation-duration: .55s; }
 
-  /* 开会 */
-  .widget[data-act="meeting"] .prop-bubbles { opacity: 1; }
-  .widget[data-act="meeting"] .jaw { transform-origin: 50% 0%; animation: talk .5s ease-in-out infinite; }
-  .widget[data-act="meeting"] .head { animation: presentBob 3.2s ease-in-out infinite; }
-  .widget[data-act="meeting"] .paw-r { animation: raisePaw 4s ease-in-out infinite; }
-  @keyframes raisePaw { 0%,60%,100% { transform: translate(0,0); } 72%,84% { transform: translate(-10px,-18px); } }
 
   /* 叹气 */
-  .widget[data-act="sigh"] .sigh-mark { opacity: 1; animation: sighFloat 3.8s ease-in-out infinite; }
-  @keyframes sighFloat { 0%,20% { opacity: 0; transform: translateY(0); } 35%,75% { opacity: .9; transform: translateY(-6px); } 100% { opacity: 0; transform: translateY(-12px); } }
-  .widget[data-act="sigh"] .head { animation: droop 3.8s ease-in-out infinite; }
-  @keyframes droop { 0%,100% { transform: translateY(0); } 40%,70% { transform: translateY(4px); } }
-  .widget[data-act="sigh"] .tail { animation: none; transform: rotate(-30deg); }
 
   /* 疯狂赶工 */
   .widget[data-act="crunch"] .prop-laptop { opacity: 1; }
@@ -370,11 +297,6 @@
   .widget[data-act="crunch"] .tail { animation-duration: .25s; }
 
   /* 绝望发呆 */
-  .widget[data-act="despair"] .prop-rain { opacity: 1; }
-  .widget[data-act="despair"] .drop { animation: rainFall 1.2s linear infinite; }
-  .widget[data-act="despair"] .drop.d2 { animation-delay: .4s; }
-  .widget[data-act="despair"] .drop.d3 { animation-delay: .8s; }
-  @keyframes rainFall { 0% { opacity: 0; transform: translateY(0); } 25% { opacity: 1; } 100% { opacity: 0; transform: translateY(10px); } }
   .widget[data-act="despair"] .head { animation: droop 4.5s ease-in-out infinite; }
   .widget[data-act="despair"] .eye { animation: none; transform: scaleY(.45); }
   .widget[data-act="despair"] .tail { animation: none; transform: rotate(-38deg); }
@@ -394,13 +316,6 @@
   .widget[data-act="snack"] .head { animation: nom 1.4s ease-in-out infinite; }
   .widget[data-act="snack"] .gaze { transform: translate(-2px,2px); }
 
-  /* 趴桌小睡 */
-  .widget[data-act="nap"] .dog-sit { opacity: 0; }
-  .widget[data-act="nap"] .dog-lie { opacity: 1; }
-  .widget[data-act="nap"] .zzz { opacity: 1; animation: zfloat 2.6s ease-in-out infinite; }
-  .widget[data-act="nap"] .zzz.z2 { animation-delay: .9s; font-size: 15px; }
-  .widget[data-act="nap"] .zzz.z3 { animation-delay: 1.8s; font-size: 18px; }
-  .widget[data-act="nap"] .breath-lie { transform-origin: 50% 100%; animation: sleepBreathe 3.8s ease-in-out infinite; }
 
   /* 开心跳舞 */
   .widget[data-act="dance"] .breath { animation: danceHop .7s cubic-bezier(.36,0,.64,1) infinite; }
@@ -422,7 +337,6 @@
   .widget[data-act="wag"] .tail { animation: wagFast .14s ease-in-out infinite alternate; }
   @keyframes wagFast { from { transform: rotate(-22deg); } to { transform: rotate(28deg); } }
   .widget[data-act="wag"] .head { animation: shake 1.1s ease-in-out infinite; }
-  .widget[data-act="wag"] .tongue { opacity: 1; }
   .widget[data-act="wag"] .heart { opacity: 1; animation: floatUp 1.8s ease-out infinite; }
   .widget[data-act="wag"] .heart.h2 { animation-delay: .6s; }
 
@@ -627,9 +541,111 @@
   .skin-name { font-size: 9.5px; color: var(--text-dim); line-height: 1.1; white-space: nowrap; }
   .skin-btn.on .skin-name { color: var(--flesh); font-weight: 700; }
 
+  /* 动作库调试面板（设置 → 动作库） */
+  .act-now { font-size: 10.5px; color: var(--text-dim); margin-bottom: 6px; }
+  .act-grid { display: grid; grid-template-columns: repeat(10, 1fr); gap: 4px; }
+  .act-btn {
+    padding: 5px 0; font-size: 10px; border-radius: 6px; font-family: inherit;
+    border: 1px solid var(--line); background: var(--cream); color: var(--text-dim);
+    cursor: pointer; transition: background .12s, color .12s, border-color .12s;
+  }
+  .act-btn:hover { background: var(--accent-soft); color: var(--flesh); border-color: var(--flesh); }
+
   /* 演示时间机 */
   .demo-row { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 14px; justify-content: center; }
   .demo-note { font-size: 11px; color: var(--text-dim); text-align: center; margin-top: 6px; }
+
+  /* ===== 摸鱼游戏 ===== */
+  .game-drawer { padding: 10px; }
+  .gm-tabs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin-bottom: 8px; }
+  .gm-tabs .seg-btn { padding: 5px 0; font-size: 10px; }
+  .gm-game { width: 100%; display: flex; flex-direction: column; align-items: center; }
+  .gm-game[hidden] { display: none; }
+  .gm-tip { font-size: 10px; color: var(--text-dim); text-align: center; margin-top: 6px; line-height: 1.5; }
+  .gm-hud { display: flex; justify-content: space-between; align-items: center; gap: 6px; width: 100%; font-size: 10.5px; color: var(--text-dim); margin-bottom: 6px; }
+  .gm-hud b { color: var(--text); font-size: 12px; }
+  .gm-btn { border: none; border-radius: 8px; padding: 4px 9px; font-family: inherit; font-size: 10.5px; background: var(--rind-dark); color: #fff; cursor: pointer; }
+  .gm-btn:active { transform: scale(.96); }
+
+  /* 打字游戏 */
+  .gm-typing { width: 100%; }
+  .gm-editor { position: relative; background: #1E222B; border-radius: 10px; overflow: hidden; }
+  .gm-editor-bar { display: flex; align-items: center; gap: 4px; padding: 5px 8px; background: #272C36; font-size: 9.5px; color: #8B94A3; }
+  .gm-editor-bar i { width: 6px; height: 6px; border-radius: 50%; background: #FF5F57; }
+  .gm-editor-bar i:nth-of-type(2) { background: #FEBC2E; }
+  .gm-editor-bar i:nth-of-type(3) { background: #28C840; }
+  .gm-editor-bar span { margin-left: 4px; }
+  .gm-code-area {
+    padding: 6px 9px 8px; min-height: 96px;
+    display: flex; flex-direction: column; justify-content: flex-end;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 10.5px; line-height: 1.7; color: #C8D0DA; overflow: hidden;
+  }
+  .gm-code-line { white-space: pre-wrap; word-break: break-all; }
+  .gm-code-line.done { color: #5E6875; }
+  .gm-code-line .ok { color: #6FD79B; }
+  .gm-code-line.shake { animation: gmShake .16s; }
+  @keyframes gmShake { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(-2px); } }
+  .gm-caret { display: inline-block; width: 1.5px; height: 11px; background: #7BD389; vertical-align: -1px; animation: gmCaret 1s steps(2) infinite; }
+  @keyframes gmCaret { 50% { opacity: 0; } }
+  .gm-stats { display: flex; justify-content: space-between; font-size: 10.5px; color: var(--text-dim); margin-top: 6px; }
+  .gm-stats b { color: var(--text); }
+  .gm-busy { height: 6px; border-radius: 999px; background: var(--line); margin-top: 6px; overflow: hidden; }
+  .gm-busy-fill { height: 100%; width: 0; border-radius: 999px; background: linear-gradient(90deg, var(--rind-dark), var(--flesh)); transition: width .18s; }
+  .gm-result {
+    position: absolute; inset: 0; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 6px;
+    background: rgba(30, 34, 43, .94); color: #E7ECF3; font-size: 11px; text-align: center; padding: 8px;
+  }
+  .gm-result .big { font-size: 22px; font-weight: 800; color: #7BD389; }
+
+  /* 俄罗斯方块 */
+  .gm-canvas-wrap { position: relative; width: 150px; }
+  .gm-canvas-wrap canvas { display: block; border-radius: 8px; background: #171B21; }
+  .gm-overlay {
+    position: absolute; inset: 0; display: none; flex-direction: column;
+    align-items: center; justify-content: center; gap: 8px;
+    background: rgba(23, 27, 33, .82); border-radius: 8px;
+    color: #E7ECF3; font-size: 11px; text-align: center; padding: 8px;
+  }
+  .gm-overlay.show { display: flex; }
+
+  /* 扫雷 */
+  .gm-mines { display: flex; flex-direction: column; align-items: center; }
+  .gm-face { border: none; background: var(--btn-soft); border-radius: 8px; width: 30px; height: 24px; font-size: 13px; cursor: pointer; line-height: 1; }
+  .gm-grid { display: grid; gap: 2px; }
+  .gm-cell {
+    width: 26px; height: 26px; padding: 0; border: none; border-radius: 5px;
+    background: #E7E1D5; font-family: inherit; font-size: 12px; font-weight: 700;
+    color: var(--text); cursor: pointer; line-height: 1; user-select: none;
+  }
+  .gm-cell.open { background: rgba(var(--panel-rgb), .95); box-shadow: inset 0 0 0 1px var(--line); cursor: default; }
+  .gm-cell.flag { background: #FFF1CC; }
+  .gm-cell.mine { background: #FFD7DD; color: #C0392B; }
+  .gm-cell.boom { background: var(--flesh); color: #fff; }
+  .gm-cell.n1 { color: #2D7FF9; } .gm-cell.n2 { color: #1E9E5A; } .gm-cell.n3 { color: #E4572E; }
+  .gm-cell.n4 { color: #7B4FF0; } .gm-cell.n5 { color: #B03A2E; } .gm-cell.n6 { color: #1F8A8A; }
+  .gm-cell.n7 { color: #444; } .gm-cell.n8 { color: #777; }
+
+  /* 数独 */
+  .gm-sudoku { display: flex; flex-direction: column; align-items: center; width: 100%; }
+  .gm-sgrid {
+    display: grid; grid-template-columns: repeat(9, 27px);
+    border: 2px solid var(--seed); border-radius: 8px; overflow: hidden; background: var(--cream);
+  }
+  .gm-scell {
+    width: 27px; height: 27px; padding: 0; border: none;
+    border-right: 1px solid var(--line); border-bottom: 1px solid var(--line);
+    background: transparent; text-align: center; font-family: inherit; font-size: 13px;
+    color: var(--text); outline: none; user-select: none;
+  }
+  .gm-scell.given { background: var(--btn-soft); font-weight: 700; }
+  .gm-scell.bad { background: #FFE3E7; color: #D62B44; }
+  .gm-scell:focus { background: var(--accent-soft); }
+  .gm-scell.br { border-right: 2px solid var(--seed); }
+  .gm-scell.bb { border-bottom: 2px solid var(--seed); }
+  .gm-sgrid .gm-scell:nth-child(9n) { border-right: none; }
+  .gm-sgrid .gm-scell:nth-last-child(-n+9) { border-bottom: none; }
 
   /* ============ 首次引导遮罩 ============ */
   .onboarding {
@@ -673,211 +689,92 @@
 
   <div class="pet-row">
     <div class="bubble" id="bubble" data-tauri-drag-region>…</div>
-    <!-- 小狗桌宠：爱吃西瓜的奶油色小狗（坐姿/站姿/蹲坑/趴睡四形态） -->
+    <!-- 小狗桌宠：德国牧羊犬（坐姿单形态，动作严格对齐 german-shepherd 素材包） -->
     <svg class="dog" viewBox="0 0 160 150" id="dogSvg" title="点我换个动作">
-      <!-- 坐姿形态 -->
-      <g class="dog-sit">
-        <path class="tail" d="M118 104 Q 138 96 140 78" fill="none" stroke="var(--dog-ear)" stroke-width="9" stroke-linecap="round"/>
-        <g class="breath">
-          <ellipse cx="80" cy="112" rx="42" ry="32" fill="var(--dog-body)"/>
-          <ellipse cx="80" cy="120" rx="26" ry="18" fill="var(--dog-inner)"/>
-          <ellipse class="paw-l" cx="62" cy="138" rx="11" ry="7" fill="var(--dog-body)" stroke="var(--dog-line)" stroke-width="1.5"/>
-          <ellipse class="paw-r" cx="98" cy="138" rx="11" ry="7" fill="var(--dog-body)" stroke="var(--dog-line)" stroke-width="1.5"/>
-          <!-- 笔记本电脑 -->
-          <g class="prop prop-laptop">
-            <rect x="48" y="126" width="64" height="5.5" rx="2.75" fill="#C7CBD6" stroke="#AEB4C2" stroke-width="1"/>
-            <rect x="54" y="94" width="52" height="33" rx="5" fill="#E9EBF1" stroke="#C4C9D4" stroke-width="1.5"/>
-            <path d="M73 108 A7 7 0 0 0 87 108 Z" fill="var(--flesh)"/>
-            <path d="M73 108 A7 7 0 0 0 87 108" fill="none" stroke="var(--rind-dark)" stroke-width="2" stroke-linecap="round"/>
-          </g>
-          <!-- 头 -->
-          <g class="head">
-            <path class="ear-l" d="M52 40 Q 30 44 32 70 Q 46 66 54 52 Z" fill="var(--dog-ear)"/>
-            <path class="ear-r" d="M108 40 Q 130 44 128 70 Q 114 66 106 52 Z" fill="var(--dog-ear)"/>
-            <circle cx="80" cy="58" r="34" fill="var(--dog-body)"/>
-            <ellipse cx="56" cy="68" rx="6.5" ry="4" fill="var(--cheek)" opacity=".55"/>
-            <ellipse cx="104" cy="68" rx="6.5" ry="4" fill="var(--cheek)" opacity=".55"/>
-            <g class="gaze">
-              <g class="eye"><circle cx="66" cy="54" r="4.2" fill="var(--seed)"/><circle cx="67.5" cy="52.5" r="1.4" fill="#fff"/></g>
-              <g class="eye"><circle cx="94" cy="54" r="4.2" fill="var(--seed)"/><circle cx="95.5" cy="52.5" r="1.4" fill="#fff"/></g>
-            </g>
-            <ellipse cx="80" cy="68" rx="12" ry="9" fill="var(--dog-inner)"/>
-            <ellipse cx="80" cy="64" rx="5.5" ry="4" fill="var(--seed)"/>
-            <g class="jaw">
-              <path d="M80 68 Q 80 76 72 75 M80 68 Q 80 76 88 75" stroke="var(--seed)" stroke-width="2" fill="none" stroke-linecap="round"/>
-              <path class="tongue" d="M80 73 Q 76 82 80 86 Q 84 82 80 73" fill="var(--flesh-mid)"/>
-            </g>
-            <path class="sweat" d="M112 44 Q 116 50 112 54 Q 108 50 112 44" fill="#7EC8F7"/>
-            <path class="sweat s2" d="M120 56 Q 124 62 120 66 Q 116 62 120 56" fill="#7EC8F7"/>
-            <!-- 打电话：贴耳手机 -->
-            <g class="prop prop-phone">
-              <g transform="rotate(-12 110 57)">
-                <rect x="104" y="47" width="12" height="20" rx="3.5" fill="#2B2B33"/>
-                <rect x="106.5" y="50" width="7" height="12" rx="1.5" fill="#8FD0FF" opacity=".85"/>
-              </g>
-              <ellipse cx="101" cy="66" rx="7" ry="5.5" fill="var(--dog-body)" stroke="var(--dog-line)" stroke-width="1.2"/>
-            </g>
-            <text class="scold-mark" x="116" y="26" font-size="15" font-weight="900" fill="var(--flesh)">！</text>
-          </g>
-          <text class="snooze" x="114" y="38" font-size="12" fill="#9A938B" font-weight="700">Z</text>
-          <!-- 西瓜 + 抱瓜双爪 -->
-          <g class="prop prop-melon">
-            <path d="M30 116 A17 17 0 0 0 64 116 Z" fill="var(--flesh)"/>
-            <path d="M30 116 A17 17 0 0 0 64 116" fill="none" stroke="var(--rind-dark)" stroke-width="5" stroke-linecap="round"/>
-            <ellipse cx="41" cy="120" rx="1.4" ry="2.2" fill="var(--seed)"/>
-            <ellipse cx="47" cy="123.5" rx="1.4" ry="2.2" fill="var(--seed)"/>
-            <ellipse cx="54" cy="120" rx="1.4" ry="2.2" fill="var(--seed)"/>
-            <ellipse cx="31" cy="112" rx="7" ry="5.5" fill="var(--dog-body)" stroke="var(--dog-line)" stroke-width="1.2"/>
-            <ellipse cx="63" cy="112" rx="7" ry="5.5" fill="var(--dog-body)" stroke="var(--dog-line)" stroke-width="1.2"/>
-          </g>
-          <!-- 咖啡杯 -->
-          <g class="prop prop-coffee">
-            <path d="M102 120 h13 v9 a5 5 0 0 1 -5 5 h-3 a5 5 0 0 1 -5 -5 z" fill="#FFFDF8" stroke="#C9C2B6" stroke-width="1.4"/>
-            <path d="M115 122 q5 0 5 4 q0 4 -5 4" fill="none" stroke="#C9C2B6" stroke-width="1.4"/>
-            <path class="steam" d="M106 116 q2 -4 0 -7" stroke="#D9D2C7" stroke-width="1.6" fill="none" stroke-linecap="round"/>
-            <path class="steam s2" d="M112 116 q2 -4 0 -7" stroke="#D9D2C7" stroke-width="1.6" fill="none" stroke-linecap="round"/>
-          </g>
-          <!-- 书本 -->
-          <g class="prop prop-book">
-            <path d="M44 118 L80 113 L80 132 L44 137 Z" fill="#FFFDF8" stroke="#C9C2B6" stroke-width="1.4"/>
-            <path d="M80 113 L116 118 L116 137 L80 132 Z" fill="#FBF6EC" stroke="#C9C2B6" stroke-width="1.4"/>
-            <path d="M50 122 L72 119 M50 127 L72 124" stroke="#D9D2C7" stroke-width="1.5" stroke-linecap="round"/>
-          </g>
-          <!-- 记事本 + 笔 -->
-          <g class="prop prop-paper">
-            <rect x="46" y="116" width="30" height="20" rx="2" fill="#FFFDF8" stroke="#C9C2B6" stroke-width="1.4" transform="rotate(-5 61 126)"/>
-            <path d="M53 123 h15 M53 128 h11" stroke="#D9D2C7" stroke-width="1.5" stroke-linecap="round"/>
-            <path d="M96 118 l10 -6" stroke="#8A6B4A" stroke-width="2.2" stroke-linecap="round"/>
-          </g>
-          <!-- 音符 -->
-          <g class="prop prop-notes">
-            <text class="note n1" x="116" y="46" font-size="14" fill="var(--rind-dark)">♪</text>
-            <text class="note n2" x="128" y="34" font-size="11" fill="var(--flesh)">♫</text>
-          </g>
-          <!-- 会议气泡 -->
-          <g class="prop prop-bubbles">
-            <rect x="104" y="26" width="34" height="18" rx="8" fill="#fff" stroke="#D8CFBF" stroke-width="1.4"/>
-            <path d="M112 44 l-2 6 7 -5" fill="#fff" stroke="#D8CFBF" stroke-width="1.4"/>
-            <rect x="26" y="20" width="30" height="16" rx="7" fill="#fff" stroke="#D8CFBF" stroke-width="1.4"/>
-          </g>
-          <!-- 叹气 -->
-          <text class="prop sigh-mark" x="112" y="32" font-size="12" font-weight="700" fill="#9A938B">唉</text>
-          <!-- 疑问 -->
-          <text class="prop think-mark" x="114" y="28" font-size="15" font-weight="900" fill="#9A938B">?</text>
-          <!-- 饼干 -->
-          <g class="prop prop-snack">
-            <circle cx="100" cy="126" r="8.5" fill="#E8C48F" stroke="#D2A868" stroke-width="1.4"/>
-            <circle cx="97" cy="123" r="1.1" fill="#8A6B4A"/>
-            <circle cx="103" cy="127" r="1.1" fill="#8A6B4A"/>
-          </g>
-          <!-- 刷手机 -->
-          <g class="prop prop-scroll">
-            <rect x="72" y="112" width="16" height="24" rx="3.5" fill="#2B2B33" transform="rotate(-7 80 124)"/>
-            <rect x="75" y="115" width="10" height="18" rx="1.5" fill="#8FD0FF" opacity=".9" transform="rotate(-7 80 124)"/>
-            <ellipse cx="70" cy="124" rx="6.5" ry="5.5" fill="var(--dog-body)" stroke="var(--dog-line)" stroke-width="1.1"/>
-            <ellipse cx="90" cy="122" rx="6.5" ry="5.5" fill="var(--dog-body)" stroke="var(--dog-line)" stroke-width="1.1"/>
-          </g>
-          <!-- 乌云小雨 -->
-          <g class="prop prop-rain">
-            <ellipse cx="112" cy="30" rx="12" ry="6" fill="#C9D6E2"/>
-            <path class="drop d1" d="M104 40 v6" stroke="#7EC8F7" stroke-width="2" stroke-linecap="round"/>
-            <path class="drop d2" d="M112 42 v6" stroke="#7EC8F7" stroke-width="2" stroke-linecap="round"/>
-            <path class="drop d3" d="M120 40 v6" stroke="#7EC8F7" stroke-width="2" stroke-linecap="round"/>
-          </g>
-          <ellipse class="crumb" cx="74" cy="88" rx="1.6" ry="2.4" fill="var(--seed)"/>
-          <ellipse class="crumb c2" cx="82" cy="90" rx="1.6" ry="2.4" fill="var(--seed)"/>
-          <text class="heart" x="36" y="40" font-size="14" fill="var(--flesh)">♥</text>
-          <text class="heart h2" x="118" y="34" font-size="12" fill="var(--flesh-mid)">♥</text>
-          <text class="heart h3" x="80" y="24" font-size="10" fill="var(--flesh-light)">♥</text>
+      <!-- 坐姿形态：德国牧羊犬 -->
+<g class="dog-sit">
+  <ellipse cx="80.000" cy="141.250" rx="36.250" ry="5.000" fill="#D9D3CC" />
+  <g class="breath">
+    <g class="tail">
+      <path d="M107.812 114.062 C121.250 116.562 127.188 107.812 133.438 98.750 C138.750 91.562 144.062 95.625 144.688 103.125 C145.938 115.625 135.938 126.875 122.188 128.125 L109.375 127.188 Z" fill="#352923" />
+      <path d="M111.562 117.188 C122.188 118.125 128.750 109.375 134.375 102.812 C136.250 108.750 130.625 118.750 120.625 121.875 L111.250 121.875 Z" fill="#E9AD63" />
+    </g>
+    <path d="M61.562 110.000 C51.875 113.125 49.375 123.125 51.875 132.500 L54.375 138.750 C55.938 142.500 62.188 143.125 67.812 140.938 L74.062 134.375 L75.625 115.625 Z" fill="#E9AD63" />
+    <path d="M98.438 110.000 C108.125 113.125 110.625 123.125 108.125 132.500 L105.625 138.750 C104.062 142.500 97.812 143.125 92.188 140.938 L85.938 134.375 L84.375 115.625 Z" fill="#E9AD63" />
+    <path d="M55.625 136.875 Q59.375 138.438 62.500 136.875 M97.500 136.875 Q100.625 138.438 104.375 136.875" fill="none" stroke="#352923" stroke-width="1.2" stroke-linecap="round" />
+    <path d="M63.438 76.875 C57.188 83.438 55.625 94.375 57.500 107.188 L60.312 127.188 C61.250 133.438 66.562 137.188 73.125 137.188 L86.875 137.188 C93.438 137.188 98.750 133.438 99.688 127.188 L102.500 107.188 C104.375 94.375 102.812 83.438 96.562 76.875 Z" fill="#E9AD63" />
+    <path d="M70.000 89.375 C72.188 85.312 87.812 85.312 90.000 89.375 L92.812 114.062 C93.438 120.312 89.062 125.000 80.000 125.000 C70.938 125.000 66.562 120.312 67.188 114.062 Z" fill="#F8D49A" />
+    <path d="M69.375 131.250 L69.375 135.938 M90.625 131.250 L90.625 135.938" fill="none" stroke="#352923" stroke-width="1.2" stroke-linecap="round" />
+    <path d="M64.062 102.500 C58.438 109.688 58.438 122.812 59.375 133.438 C59.688 138.750 63.750 140.938 69.062 140.312 L74.688 139.375 C77.188 138.750 78.438 136.250 77.812 133.125 L76.562 109.375 Z" fill="#F8D49A" class="paw-l" />
+    <path d="M95.938 102.500 C101.562 109.688 101.562 122.812 100.625 133.438 C100.312 138.750 96.250 140.938 90.938 140.312 L85.312 139.375 C82.812 138.750 81.562 136.250 82.188 133.125 L83.438 109.375 Z" fill="#F8D49A" class="paw-r" />
+    <path d="M63.125 136.562 L63.125 138.438 M68.438 136.875 L68.438 138.750 M91.562 136.875 L91.562 138.750 M96.875 136.562 L96.875 138.438" fill="none" stroke="#352923" stroke-width="1.2" stroke-linecap="round" />
+    <g class="head">
+      <g class="ear-l">
+        <path d="M59.688 47.188 C52.812 42.812 50.312 29.688 54.375 14.688 C55.938 8.438 60.312 8.750 64.062 14.688 L74.062 32.812 L71.875 47.812 Z" fill="#352923" />
+        <path d="M59.375 37.812 C56.562 32.812 56.562 22.812 58.750 16.875 L67.500 33.750 L66.875 40.625 Z" fill="#F5A77D" />
+      </g>
+      <g class="ear-r">
+        <path d="M100.312 47.188 C107.188 42.812 109.688 29.688 105.625 14.688 C104.062 8.438 99.688 8.750 95.938 14.688 L85.938 32.812 L88.125 47.812 Z" fill="#352923" />
+        <path d="M100.625 37.812 C103.438 32.812 103.438 22.812 101.250 16.875 L92.500 33.750 L93.125 40.625 Z" fill="#F5A77D" />
+      </g>
+      <path d="M80.000 26.875 C65.000 26.875 53.438 37.188 51.250 52.812 C48.750 69.375 57.188 82.500 68.750 87.188 L91.250 87.188 C102.812 82.500 111.250 69.375 108.750 52.812 C106.562 37.188 95.000 26.875 80.000 26.875 Z" fill="#E9AD63" />
+      <path d="M57.500 45.625 C63.125 35.938 71.250 32.188 80.000 32.188 C88.750 32.188 96.875 35.938 102.500 45.625 L95.938 57.500 L64.062 57.500 Z" fill="#352923" />
+      <path d="M59.375 60.625 C64.688 55.312 71.250 54.375 76.562 59.062 L80.000 67.188 L83.438 59.062 C88.750 54.375 95.312 55.312 100.625 60.625 C99.062 71.250 91.250 78.125 80.000 78.125 C68.750 78.125 60.938 71.250 59.375 60.625 Z" fill="#F8D49A" />
+      <g class="eye">
+        <g class="gaze">
+          <ellipse cx="68.125" cy="59.375" rx="3.438" ry="5.000" fill="#352923" />
+          <ellipse cx="91.875" cy="59.375" rx="3.438" ry="5.000" fill="#352923" />
+          <circle cx="69.062" cy="57.812" r="1.094" fill="#FFF9EF" />
+          <circle cx="92.812" cy="57.812" r="1.094" fill="#FFF9EF" />
         </g>
       </g>
-
-      <!-- 站姿形态：做汇报 -->
-      <g class="dog-stand">
-        <path class="tail" d="M84 118 Q 100 112 102 98" fill="none" stroke="var(--dog-ear)" stroke-width="8" stroke-linecap="round"/>
-        <g>
-          <path d="M112 92 L106 146 M140 92 L146 146" stroke="#8A6B4A" stroke-width="4" stroke-linecap="round"/>
-          <rect x="100" y="48" width="54" height="44" rx="4" fill="#FFFFFF" stroke="#D8CFBF" stroke-width="2"/>
-          <path d="M106 58 L106 86 M106 86 L148 86" stroke="#C9C2B6" stroke-width="1.5"/>
-          <polyline points="108,62 116,66 124,71 132,77 141,82" fill="none" stroke="var(--flesh)" stroke-width="2.5" stroke-linecap="round"/>
-          <path d="M141 82 l5 1.5 -4.5 3.5 z" fill="var(--flesh)"/>
-        </g>
-        <rect x="52" y="128" width="9" height="16" rx="4.5" fill="var(--dog-body)" stroke="var(--dog-line)" stroke-width="1.2"/>
-        <rect x="67" y="128" width="9" height="16" rx="4.5" fill="var(--dog-body)" stroke="var(--dog-line)" stroke-width="1.2"/>
-        <ellipse cx="62" cy="102" rx="22" ry="28" fill="var(--dog-body)"/>
-        <ellipse cx="62" cy="110" rx="13" ry="16" fill="var(--dog-inner)"/>
-        <path d="M46 96 Q 38 106 42 116" stroke="var(--dog-body)" stroke-width="9" stroke-linecap="round" fill="none"/>
-        <g class="pointer-arm">
-          <path d="M82 92 Q 96 82 104 72" stroke="var(--dog-body)" stroke-width="9" stroke-linecap="round" fill="none"/>
-          <line x1="104" y1="72" x2="128" y2="66" stroke="#8A6B4A" stroke-width="3.5" stroke-linecap="round"/>
-        </g>
-        <g class="head-s">
-          <path d="M44 34 Q 24 38 26 60 Q 38 56 45 46 Z" fill="var(--dog-ear)"/>
-          <path d="M80 34 Q 100 38 98 60 Q 86 56 79 46 Z" fill="var(--dog-ear)"/>
-          <circle cx="62" cy="56" r="27" fill="var(--dog-body)"/>
-          <ellipse cx="44" cy="64" rx="5" ry="3.2" fill="var(--cheek)" opacity=".55"/>
-          <ellipse cx="80" cy="64" rx="5" ry="3.2" fill="var(--cheek)" opacity=".55"/>
-          <g class="eye"><circle cx="54" cy="52" r="3.6" fill="var(--seed)"/><circle cx="55.2" cy="50.8" r="1.2" fill="#fff"/></g>
-          <g class="eye"><circle cx="70" cy="52" r="3.6" fill="var(--seed)"/><circle cx="71.2" cy="50.8" r="1.2" fill="#fff"/></g>
-          <ellipse cx="62" cy="64" rx="10" ry="7.5" fill="var(--dog-inner)"/>
-          <ellipse cx="62" cy="60.5" rx="4.5" ry="3.2" fill="var(--seed)"/>
-          <g class="jaw">
-            <path d="M62 64 Q 62 71 55.5 70 M62 64 Q 62 71 68.5 70" stroke="var(--seed)" stroke-width="1.8" fill="none" stroke-linecap="round"/>
-          </g>
+      <path d="M62.812 51.875 Q66.250 49.375 70.000 51.562 M90.000 51.562 Q93.750 49.375 97.188 51.875" fill="none" stroke="#352923" stroke-width="1.2" stroke-linecap="round" />
+      <g class="jaw">
+        <path d="M67.188 68.438 C69.062 63.125 74.688 61.562 80.000 61.562 C85.312 61.562 90.938 63.125 92.812 68.438 C91.562 75.625 86.250 80.000 80.000 80.000 C73.750 80.000 68.438 75.625 67.188 68.438 Z" fill="#F8D49A" />
+        <ellipse cx="80.000" cy="68.750" rx="5.625" ry="4.062" fill="#352923" />
+        <path d="M80.000 72.188 L80.000 75.312 M80.000 75.312 C77.188 78.438 73.750 77.500 72.500 75.312 M80.000 75.312 C82.812 78.438 86.250 77.500 87.500 75.312" fill="none" stroke="#352923" stroke-width="1.2" stroke-linecap="round" />
+      </g>
+      <ellipse cx="60.000" cy="70.000" rx="3.125" ry="1.562" fill="#F47F83" opacity=".8" />
+      <ellipse cx="100.000" cy="70.000" rx="3.125" ry="1.562" fill="#F47F83" opacity=".8" />
+      <path class="sweat" d="M112 44 Q 116 50 112 54 Q 108 50 112 44" fill="#7EC8F7" />
+      <path class="sweat s2" d="M120 56 Q 124 62 120 66 Q 116 62 120 56" fill="#7EC8F7" />
+      <g class="prop prop-phone">
+        <g transform="rotate(-12 110 57)">
+          <rect x="104" y="47" width="12" height="20" rx="3.5" fill="#2B2B33" />
+          <rect x="106.5" y="50" width="7" height="12" rx="1.5" fill="#8FD0FF" opacity=".85" />
         </g>
       </g>
-
-      <!-- 蹲坑形态：刷手机 -->
-      <g class="dog-toilet">
-        <circle cx="130" cy="130" r="7.5" fill="#fff" stroke="#D5DBE1" stroke-width="1.5"/>
-        <circle cx="130" cy="130" r="2.5" fill="#D5DBE1"/>
-        <rect x="126" y="130" width="8.5" height="13" rx="2" fill="#fff" stroke="#D5DBE1" stroke-width="1"/>
-        <ellipse cx="80" cy="147" rx="42" ry="4.5" fill="#000" opacity=".07"/>
-        <path d="M46 116 Q 44 140 62 146 L98 146 Q 116 140 114 116 Z" fill="#EDF1F4" stroke="#D5DBE1" stroke-width="2"/>
-        <ellipse cx="80" cy="100" rx="30" ry="27" fill="var(--dog-body)"/>
-        <ellipse cx="80" cy="116" rx="37" ry="13" fill="#F7F9FB" stroke="#D5DBE1" stroke-width="2"/>
-        <ellipse class="leg-l" cx="63" cy="130" rx="7" ry="10" fill="var(--dog-body)" stroke="var(--dog-line)" stroke-width="1.2"/>
-        <ellipse class="leg-r" cx="97" cy="130" rx="7" ry="10" fill="var(--dog-body)" stroke="var(--dog-line)" stroke-width="1.2"/>
-        <g class="head-t">
-          <path d="M56 42 Q 36 46 38 68 Q 50 64 57 54 Z" fill="var(--dog-ear)"/>
-          <path d="M104 42 Q 124 46 122 68 Q 110 64 103 54 Z" fill="var(--dog-ear)"/>
-          <circle cx="80" cy="62" r="29" fill="var(--dog-body)"/>
-          <ellipse class="glow" cx="80" cy="66" rx="24" ry="20" fill="#BFE3FF" opacity="0"/>
-          <ellipse cx="59" cy="70" rx="5.5" ry="3.5" fill="var(--cheek)" opacity=".55"/>
-          <ellipse cx="101" cy="70" rx="5.5" ry="3.5" fill="var(--cheek)" opacity=".55"/>
-          <g class="gaze-t">
-            <g class="eye"><circle cx="68" cy="58" r="4" fill="var(--seed)"/><circle cx="69.3" cy="56.6" r="1.3" fill="#fff"/></g>
-            <g class="eye"><circle cx="92" cy="58" r="4" fill="var(--seed)"/><circle cx="93.3" cy="56.6" r="1.3" fill="#fff"/></g>
-          </g>
-          <ellipse cx="80" cy="72" rx="11" ry="8" fill="var(--dog-inner)"/>
-          <ellipse cx="80" cy="67.5" rx="5" ry="3.5" fill="var(--seed)"/>
-          <path d="M74 78 Q 80 82 86 78" stroke="var(--seed)" stroke-width="2" fill="none" stroke-linecap="round"/>
-        </g>
-        <rect x="69" y="88" width="22" height="34" rx="5" fill="#2B2B33"/>
-        <rect x="72" y="92" width="16" height="24" rx="2.5" fill="#8FD0FF" opacity=".9"/>
-        <ellipse cx="66" cy="104" rx="7" ry="6" fill="var(--dog-body)" stroke="var(--dog-line)" stroke-width="1.2"/>
-        <ellipse cx="94" cy="104" rx="7" ry="6" fill="var(--dog-body)" stroke="var(--dog-line)" stroke-width="1.2"/>
-        <ellipse class="thumb" cx="89" cy="98" rx="3" ry="4.5" fill="var(--dog-body)" stroke="var(--dog-line)" stroke-width="1"/>
-      </g>
-
-      <!-- 趴睡形态 -->
-      <g class="dog-lie">
-        <g class="breath-lie">
-          <path class="tail-lie" d="M130 128 Q 148 124 150 110" fill="none" stroke="var(--dog-ear)" stroke-width="8" stroke-linecap="round"/>
-          <ellipse cx="88" cy="126" rx="52" ry="20" fill="var(--dog-body)"/>
-          <circle cx="42" cy="112" r="26" fill="var(--dog-body)"/>
-          <path d="M22 100 Q 4 106 8 126 Q 20 122 26 112 Z" fill="var(--dog-ear)"/>
-          <path d="M62 100 Q 78 106 74 126 Q 64 122 58 112 Z" fill="var(--dog-ear)"/>
-          <path d="M28 110 Q 33 114 38 110" stroke="var(--seed)" stroke-width="2.2" fill="none" stroke-linecap="round"/>
-          <path d="M48 110 Q 53 114 58 110" stroke="var(--seed)" stroke-width="2.2" fill="none" stroke-linecap="round"/>
-          <ellipse cx="43" cy="120" rx="5" ry="3.6" fill="var(--seed)"/>
-          <ellipse cx="26" cy="118" rx="5" ry="3.2" fill="var(--cheek)" opacity=".5"/>
-          <ellipse cx="60" cy="118" rx="5" ry="3.2" fill="var(--cheek)" opacity=".5"/>
-        </g>
-        <text class="zzz" x="78" y="96" font-size="13" fill="#9A938B" font-weight="700">Z</text>
-        <text class="zzz z2" x="88" y="86" fill="#9A938B" font-weight="700">Z</text>
-        <text class="zzz z3" x="100" y="74" fill="#9A938B" font-weight="700">Z</text>
-      </g>
+      <text class="scold-mark" x="116" y="26" font-size="15" font-weight="900" fill="var(--flesh)">！</text>
+    </g>
+    <text class="snooze" x="114" y="38" font-size="12" fill="#9A938B" font-weight="700">Z</text>
+    <g class="prop prop-laptop">
+      <rect x="48" y="126" width="64" height="5.5" rx="2.75" fill="#C7CBD6" stroke="#AEB4C2" stroke-width="1" />
+      <rect x="54" y="94" width="52" height="33" rx="5" fill="#E9EBF1" stroke="#C4C9D4" stroke-width="1.5" />
+      <path d="M73 108 A7 7 0 0 0 87 108 Z" fill="var(--flesh)" />
+      <path d="M73 108 A7 7 0 0 0 87 108" fill="none" stroke="var(--rind-dark)" stroke-width="2" stroke-linecap="round" />
+    </g>
+    <g class="prop prop-coffee">
+      <path d="M102 120 h13 v9 a5 5 0 0 1 -5 5 h-3 a5 5 0 0 1 -5 -5 z" fill="#FFFDF8" stroke="#C9C2B6" stroke-width="1.4" />
+      <path d="M115 122 q5 0 5 4 q0 4 -5 4" fill="none" stroke="#C9C2B6" stroke-width="1.4" />
+      <path class="steam" d="M106 116 q2 -4 0 -7" stroke="#D9D2C7" stroke-width="1.6" fill="none" stroke-linecap="round" />
+      <path class="steam s2" d="M112 116 q2 -4 0 -7" stroke="#D9D2C7" stroke-width="1.6" fill="none" stroke-linecap="round" />
+    </g>
+    <g class="prop prop-scroll">
+      <rect x="72" y="112" width="16" height="24" rx="3.5" fill="#2B2B33" transform="rotate(-7 80 124)" />
+      <rect x="75" y="115" width="10" height="18" rx="1.5" fill="#8FD0FF" opacity=".9" transform="rotate(-7 80 124)" />
+      <ellipse cx="70" cy="124" rx="6.5" ry="5.5" fill="#E9AD63" stroke="#352923" stroke-width="1.1" />
+      <ellipse cx="90" cy="122" rx="6.5" ry="5.5" fill="#E9AD63" stroke="#352923" stroke-width="1.1" />
+    </g>
+    <g class="prop prop-snack">
+      <circle cx="100" cy="126" r="8.5" fill="#E8C48F" stroke="#D2A868" stroke-width="1.4" />
+      <circle cx="97" cy="123" r="1.1" fill="#8A6B4A" />
+      <circle cx="103" cy="127" r="1.1" fill="#8A6B4A" />
+    </g>
+    <text class="heart" x="36" y="40" font-size="14" fill="var(--flesh)">♥</text>
+    <text class="heart h2" x="118" y="34" font-size="12" fill="var(--flesh-mid)">♥</text>
+    <text class="heart h3" x="80" y="24" font-size="10" fill="var(--flesh-light)">♥</text>
+  </g>
+</g>
     </svg>
   </div>
 
@@ -923,6 +820,7 @@
     <div class="todo-hint">下班前还有 <b id="todoLeft">0</b> 件事</div>
     <div>
       <button class="icon-btn" id="todoToggle" title="待办">☰</button>
+      <button class="icon-btn" id="gameToggle" title="摸鱼游戏">🎮</button>
       <button class="icon-btn" id="gearToggle" title="设置">⚙</button>
     </div>
   </div>
@@ -975,6 +873,26 @@
 
     <h3 style="margin-top:12px">皮肤</h3>
     <div class="skin-row" id="skinRow"></div>
+
+    <h3 style="margin-top:12px">渲染器</h3>
+    <div class="seg-row">
+      <button class="seg-btn" id="rendererLegacy">原生 SVG</button>
+      <button class="seg-btn on" id="rendererRive">Rive</button>
+    </div>
+    <div style="font-size:10.5px;color:var(--text-dim);margin-top:4px">
+      切换后自动刷新。缺 assets/dog.riv 时会自动回退原生 SVG。
+    </div>
+    <div style="font-size:10.5px;margin-top:4px" id="riveAssetState"></div>
+
+    <h3 style="margin-top:12px">动作库（点击预览）</h3>
+    <div class="act-now" id="actNow">未播放</div>
+    <div class="act-grid" id="actionGrid"></div>
+  </div>
+
+  <!-- 摸鱼游戏抽屉 -->
+  <div class="drawer game-drawer" id="gameDrawer">
+    <div class="gm-tabs" id="gmTabs"></div>
+    <div class="gm-body" id="gmBody"></div>
   </div>
   </div>
 </div>
@@ -993,6 +911,10 @@
   <div class="ob-card" id="obCard"></div>
 </div>
 
-<script type="module" src="../src/main.ts"></script>
+<script type="module">
+  // 用内联 import 而不是 src="../src/main.ts"：
+  // dev 模式下 Vite 的 root 是 ui/，外部相对路径会被当成 /src/main.ts 而 404
+  import "../src/main";
+</script>
 </body>
 </html>

@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="mood_5_proud">
+  <title>mood_5_proud</title>
+  <g stroke="#352923" stroke-width="9" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M204 188 Q218 180 231 188 M281 188 Q294 180 307 188" fill="none" stroke-width="5"/>
+    <path d="M241 247 Q256 259 271 247" fill="none" stroke-width="5"/>
+    <path d="M350 145 L355 133 L360 145 L373 150 L360 155 L355 168 L350 155 L337 150 Z" fill="#F5C451" stroke="none"/>
+  </g>
+</svg>

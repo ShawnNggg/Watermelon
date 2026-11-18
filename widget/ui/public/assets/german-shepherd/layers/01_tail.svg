@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="Tail">
+  <title>Tail</title>
+  <g stroke="#352923" stroke-width="9" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M345 365 C388 373 407 345 427 316 C444 293 461 306 463 330 C467 370 435 406 391 410 L350 407 Z" fill="#352923"/>
+    <path d="M357 375 C391 378 412 350 430 329 C436 348 418 380 386 390 L356 390 Z" fill="#E9AD63" stroke="none"/>
+  </g>
+</svg>

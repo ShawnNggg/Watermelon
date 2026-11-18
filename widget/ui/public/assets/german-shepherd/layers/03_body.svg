@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="Body and belly">
+  <title>Body and belly</title>
+  <g stroke="#352923" stroke-width="9" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M203 246 C183 267 178 302 184 343 L193 407 C196 427 213 439 234 439 L278 439 C299 439 316 427 319 407 L328 343 C334 302 329 267 309 246 Z" fill="#E9AD63"/>
+    <path d="M224 286 C231 273 281 273 288 286 L297 365 C299 385 285 400 256 400 C227 400 213 385 215 365 Z" fill="#F8D49A" stroke="none"/>
+    <path d="M222 420 L222 435 M290 420 L290 435" fill="none" stroke="#352923" stroke-width="5"/>
+  </g>
+</svg>

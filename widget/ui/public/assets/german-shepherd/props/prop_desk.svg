@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="Office desk">
+<title>Office desk</title>
+<g stroke="#352923" stroke-width="8" stroke-linecap="round" stroke-linejoin="round">
+
+  <path d="M54 202 Q54 190 68 190 L444 190 Q458 190 458 202 L458 235 L54 235 Z" fill="#E9AD63"/>
+  <path d="M86 235 L112 235 L112 420 L86 420 Z" fill="#352923"/>
+  <path d="M400 235 L426 235 L426 420 L400 420 Z" fill="#352923"/>
+  <path d="M76 420 L122 420 M390 420 L436 420" fill="none" stroke="#352923" stroke-width="10"/>
+  <path d="M160 190 L174 166 L338 166 L352 190 Z" fill="#F8D49A"/>
+
+</g>
+</svg>

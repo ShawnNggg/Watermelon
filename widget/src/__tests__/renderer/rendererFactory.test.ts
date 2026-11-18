@@ -39,7 +39,7 @@ describe("rendererFactory", () => {
   });
 
   it("kind=auto + localStorage='rive' + 无 rivUrl → fallback Legacy", () => {
-    localStorage.setItem("watermelon-widget-renderer", "rive");
+    localStorage.setItem("watermelon-widget-renderer-v2", "rive");
     const r = createRenderer("auto");
     expect(r).toBeInstanceOf(LegacyDogRenderer);
   });
@@ -50,7 +50,7 @@ describe("rendererFactory", () => {
     saveRendererKind("legacy");
     expect(loadRendererKind()).toBe("legacy");
     localStorage.clear();
-    expect(loadRendererKind()).toBeNull();
+    expect(loadRendererKind()).toBe("rive");
   });
 });
 

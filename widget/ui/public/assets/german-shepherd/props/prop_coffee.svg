@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="Coffee mug">
+<title>Coffee mug</title>
+<g stroke="#352923" stroke-width="8" stroke-linecap="round" stroke-linejoin="round">
+
+  <path d="M158 151 L337 151 L322 335 Q319 356 298 356 L197 356 Q176 356 173 335 Z" fill="#FFF3DC"/>
+  <path d="M337 188 L365 188 Q399 188 399 225 Q399 263 363 263 L331 263" fill="none" stroke-width="17"/>
+  <path d="M177 191 L328 191 L324 250 L181 250 Z" fill="#E9AD63" stroke="none"/>
+  <path d="M219 117 Q202 94 222 76 M260 117 Q243 94 263 76 M300 117 Q283 94 303 76" fill="none" stroke="#D9D3CC" stroke-width="7"/>
+
+</g>
+</svg>

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Watermelon 灰盒占位：cash（Rive 导入用，可直接整体替换成正式素材） -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64"
+     fill="none" stroke="#8a8a8a" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round">
+  <title>cash</title>
+  <rect x="6" y="20" width="52" height="26" rx="3" fill="#e8e8e8"/>
+  <circle cx="32" cy="33" r="7" fill="#dcdcdc"/>
+  <path d="M12 27v12M52 27v12"/>
+</svg>

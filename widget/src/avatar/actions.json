@@ -1,0 +1,1667 @@
+{
+  "version": 1,
+  "inputs": {
+    "poses": {
+      "sit_desk": 0,
+      "stand": 1,
+      "prone": 2,
+      "lie": 3,
+      "held": 4
+    },
+    "moods": {
+      "calm": 0,
+      "happy": 1,
+      "panic": 2,
+      "sleepy": 3,
+      "surprised": 4,
+      "smug": 5
+    },
+    "props": [
+      "bag",
+      "coffee",
+      "glasses",
+      "laptop",
+      "phone",
+      "phones",
+      "snack"
+    ],
+    "fx": [
+      "heart",
+      "money",
+      "sparkle",
+      "surprise",
+      "sweat",
+      "z"
+    ]
+  },
+  "actions": [
+    {
+      "id": 1,
+      "key": "typing",
+      "category": "work",
+      "name": "敲电脑",
+      "phases": [
+        "work",
+        "overtime"
+      ],
+      "type": "loop",
+      "durationSec": 8,
+      "priority": 10,
+      "cooldownSec": 0,
+      "interruptible": true,
+      "rive": {
+        "action": 1,
+        "pose": 0,
+        "mood": 0,
+        "props": [
+          "laptop"
+        ],
+        "fx": []
+      },
+      "poseKey": "sit_desk",
+      "moodKey": "calm",
+      "trigger": {
+        "kind": "idle",
+        "weight": 6
+      },
+      "extraProps": []
+    },
+    {
+      "id": 2,
+      "key": "frown_screen",
+      "category": "work",
+      "name": "盯屏幕皱眉",
+      "phases": [
+        "work",
+        "overtime"
+      ],
+      "type": "oneshot",
+      "durationSec": 3,
+      "priority": 10,
+      "cooldownSec": 90,
+      "interruptible": true,
+      "rive": {
+        "action": 2,
+        "pose": 0,
+        "mood": 0,
+        "props": [
+          "laptop"
+        ],
+        "fx": []
+      },
+      "poseKey": "sit_desk",
+      "moodKey": "calm",
+      "trigger": {
+        "kind": "idle",
+        "weight": 3
+      },
+      "extraProps": []
+    },
+    {
+      "id": 3,
+      "key": "drink_coffee",
+      "category": "work",
+      "name": "喝咖啡",
+      "phases": [
+        "work",
+        "overtime"
+      ],
+      "type": "oneshot",
+      "durationSec": 4,
+      "priority": 10,
+      "cooldownSec": 180,
+      "interruptible": true,
+      "rive": {
+        "action": 3,
+        "pose": 0,
+        "mood": 0,
+        "props": [
+          "coffee"
+        ],
+        "fx": []
+      },
+      "poseKey": "sit_desk",
+      "moodKey": "calm",
+      "trigger": {
+        "kind": "idle",
+        "weight": 3
+      },
+      "extraProps": []
+    },
+    {
+      "id": 4,
+      "key": "flip_docs",
+      "category": "work",
+      "name": "翻文件",
+      "phases": [
+        "work"
+      ],
+      "type": "loop",
+      "durationSec": 6,
+      "priority": 10,
+      "cooldownSec": 0,
+      "interruptible": true,
+      "rive": {
+        "action": 4,
+        "pose": 0,
+        "mood": 0,
+        "props": [
+          "paper"
+        ],
+        "fx": []
+      },
+      "poseKey": "sit_desk",
+      "moodKey": "calm",
+      "trigger": {
+        "kind": "idle",
+        "weight": 2
+      },
+      "extraProps": [
+        "paper"
+      ]
+    },
+    {
+      "id": 5,
+      "key": "meeting_nod",
+      "category": "work",
+      "name": "开会点头",
+      "phases": [
+        "work"
+      ],
+      "type": "loop",
+      "durationSec": 6,
+      "priority": 10,
+      "cooldownSec": 0,
+      "interruptible": true,
+      "rive": {
+        "action": 5,
+        "pose": 0,
+        "mood": 0,
+        "props": [
+          "laptop"
+        ],
+        "fx": []
+      },
+      "poseKey": "sit_desk",
+      "moodKey": "calm",
+      "trigger": {
+        "kind": "idle",
+        "weight": 2
+      },
+      "extraProps": []
+    },
+    {
+      "id": 6,
+      "key": "phone_call",
+      "category": "work",
+      "name": "打电话",
+      "phases": [
+        "work"
+      ],
+      "type": "loop",
+      "durationSec": 6,
+      "priority": 10,
+      "cooldownSec": 0,
+      "interruptible": true,
+      "rive": {
+        "action": 6,
+        "pose": 0,
+        "mood": 0,
+        "props": [
+          "telephone"
+        ],
+        "fx": []
+      },
+      "poseKey": "sit_desk",
+      "moodKey": "calm",
+      "trigger": {
+        "kind": "idle",
+        "weight": 2
+      },
+      "extraProps": [
+        "telephone"
+      ]
+    },
+    {
+      "id": 7,
+      "key": "pull_hair",
+      "category": "work",
+      "name": "抓头发崩溃",
+      "phases": [
+        "work",
+        "overtime"
+      ],
+      "type": "oneshot",
+      "durationSec": 3,
+      "priority": 20,
+      "cooldownSec": 120,
+      "interruptible": true,
+      "rive": {
+        "action": 7,
+        "pose": 0,
+        "mood": 2,
+        "props": [
+          "laptop"
+        ],
+        "fx": [
+          "sweat"
+        ]
+      },
+      "poseKey": "sit_desk",
+      "moodKey": "panic",
+      "trigger": {
+        "kind": "idle",
+        "weight": 3
+      },
+      "extraProps": []
+    },
+    {
+      "id": 8,
+      "key": "stretch",
+      "category": "work",
+      "name": "伸懒腰",
+      "phases": [
+        "work",
+        "slack",
+        "overtime"
+      ],
+      "type": "oneshot",
+      "durationSec": 3,
+      "priority": 15,
+      "cooldownSec": 240,
+      "interruptible": true,
+      "rive": {
+        "action": 8,
+        "pose": 1,
+        "mood": 0,
+        "props": [],
+        "fx": []
+      },
+      "poseKey": "stand",
+      "moodKey": "calm",
+      "trigger": {
+        "kind": "idle",
+        "weight": 3
+      },
+      "extraProps": []
+    },
+    {
+      "id": 9,
+      "key": "rub_neck",
+      "category": "work",
+      "name": "揉肩颈",
+      "phases": [
+        "work",
+        "overtime"
+      ],
+      "type": "oneshot",
+      "durationSec": 3,
+      "priority": 10,
+      "cooldownSec": 240,
+      "interruptible": true,
+      "rive": {
+        "action": 9,
+        "pose": 0,
+        "mood": 0,
+        "props": [],
+        "fx": []
+      },
+      "poseKey": "sit_desk",
+      "moodKey": "calm",
+      "trigger": {
+        "kind": "idle",
+        "weight": 2
+      },
+      "extraProps": []
+    },
+    {
+      "id": 10,
+      "key": "task_done",
+      "category": "work",
+      "name": "完成任务小庆祝",
+      "phases": [
+        "work"
+      ],
+      "type": "oneshot",
+      "durationSec": 2.5,
+      "priority": 40,
+      "cooldownSec": 30,
+      "interruptible": true,
+      "rive": {
+        "action": 10,
+        "pose": 0,
+        "mood": 1,
+        "props": [
+          "laptop"
+        ],
+        "fx": [
+          "sparkle"
+        ]
+      },
+      "poseKey": "sit_desk",
+      "moodKey": "happy",
+      "trigger": {
+        "kind": "event",
+        "name": "todo_done"
+      },
+      "extraProps": []
+    },
+    {
+      "id": 11,
+      "key": "sneak_phone",
+      "category": "slack",
+      "name": "偷偷玩手机",
+      "phases": [
+        "slack"
+      ],
+      "type": "loop",
+      "durationSec": 8,
+      "priority": 10,
+      "cooldownSec": 0,
+      "interruptible": true,
+      "rive": {
+        "action": 11,
+        "pose": 0,
+        "mood": 5,
+        "props": [
+          "phone"
+        ],
+        "fx": []
+      },
+      "poseKey": "sit_desk",
+      "moodKey": "smug",
+      "trigger": {
+        "kind": "idle",
+        "weight": 6
+      },
+      "extraProps": []
+    },
+    {
+      "id": 12,
+      "key": "boss_alert",
+      "category": "slack",
+      "name": "老板来了",
+      "phases": [
+        "work",
+        "slack",
+        "overtime"
+      ],
+      "type": "oneshot",
+      "durationSec": 2,
+      "priority": 90,
+      "cooldownSec": 0,
+      "interruptible": false,
+      "rive": {
+        "action": 12,
+        "pose": 0,
+        "mood": 4,
+        "props": [
+          "laptop"
+        ],
+        "fx": [
+          "surprise"
+        ]
+      },
+      "poseKey": "sit_desk",
+      "moodKey": "surprised",
+      "trigger": {
+        "kind": "event",
+        "name": "boss_key"
+      },
+      "extraProps": []
+    },
+    {
+      "id": 13,
+      "key": "video_giggle",
+      "category": "slack",
+      "name": "刷视频憋笑",
+      "phases": [
+        "slack"
+      ],
+      "type": "loop",
+      "durationSec": 8,
+      "priority": 10,
+      "cooldownSec": 0,
+      "interruptible": true,
+      "rive": {
+        "action": 13,
+        "pose": 0,
+        "mood": 1,
+        "props": [
+          "phone"
+        ],
+        "fx": []
+      },
+      "poseKey": "sit_desk",
+      "moodKey": "happy",
+      "trigger": {
+        "kind": "idle",
+        "weight": 4
+      },
+      "extraProps": []
+    },
+    {
+      "id": 14,
+      "key": "sneak_snack",
+      "category": "slack",
+      "name": "偷吃零食",
+      "phases": [
+        "slack"
+      ],
+      "type": "loop",
+      "durationSec": 7,
+      "priority": 10,
+      "cooldownSec": 0,
+      "interruptible": true,
+      "rive": {
+        "action": 14,
+        "pose": 0,
+        "mood": 5,
+        "props": [
+          "snack"
+        ],
+        "fx": []
+      },
+      "poseKey": "sit_desk",
+      "moodKey": "smug",
+      "trigger": {
+        "kind": "idle",
+        "weight": 3
+      },
+      "extraProps": []
+    },
+    {
+      "id": 15,
+      "key": "headphones_groove",
+      "category": "slack",
+      "name": "戴耳机摇头",
+      "phases": [
+        "slack"
+      ],
+      "type": "loop",
+      "durationSec": 8,
+      "priority": 10,
+      "cooldownSec": 0,
+      "interruptible": true,
+      "rive": {
+        "action": 15,
+        "pose": 0,
+        "mood": 1,
+        "props": [
+          "phones"
+        ],
+        "fx": []
+      },
+      "poseKey": "sit_desk",
+      "moodKey": "happy",
+      "trigger": {
+        "kind": "idle",
+        "weight": 3
+      },
+      "extraProps": []
+    },
+    {
+      "id": 16,
+      "key": "secret_gaming",
+      "category": "slack",
+      "name": "假装工作其实在打游戏",
+      "phases": [
+        "slack"
+      ],
+      "type": "loop",
+      "durationSec": 8,
+      "priority": 10,
+      "cooldownSec": 0,
+      "interruptible": true,
+      "rive": {
+        "action": 16,
+        "pose": 0,
+        "mood": 5,
+        "props": [
+          "laptop"
+        ],
+        "fx": []
+      },
+      "poseKey": "sit_desk",
+      "moodKey": "smug",
+      "trigger": {
+        "kind": "idle",
+        "weight": 3
+      },
+      "extraProps": []
+    },
+    {
+      "id": 17,
+      "key": "fishing",
+      "category": "slack",
+      "name": "钓鱼",
+      "phases": [
+        "slack"
+      ],
+      "type": "loop",
+      "durationSec": 8,
+      "priority": 10,
+      "cooldownSec": 0,
+      "interruptible": true,
+      "rive": {
+        "action": 17,
+        "pose": 0,
+        "mood": 0,
+        "props": [
+          "fishing_rod"
+        ],
+        "fx": []
+      },
+      "poseKey": "sit_desk",
+      "moodKey": "calm",
+      "trigger": {
+        "kind": "idle",
+        "weight": 2
+      },
+      "extraProps": [
+        "fishing_rod"
+      ]
+    },
+    {
+      "id": 18,
+      "key": "wait_delivery",
+      "category": "slack",
+      "name": "等外卖/奶茶",
+      "phases": [
+        "slack"
+      ],
+      "type": "loop",
+      "durationSec": 8,
+      "priority": 10,
+      "cooldownSec": 0,
+      "interruptible": true,
+      "rive": {
+        "action": 18,
+        "pose": 1,
+        "mood": 0,
+        "props": [
+          "takeout"
+        ],
+        "fx": []
+      },
+      "poseKey": "stand",
+      "moodKey": "calm",
+      "trigger": {
+        "kind": "idle",
+        "weight": 2
+      },
+      "extraProps": [
+        "takeout"
+      ]
+    },
+    {
+      "id": 19,
+      "key": "make_tea",
+      "category": "slack",
+      "name": "接水泡茶",
+      "phases": [
+        "slack"
+      ],
+      "type": "oneshot",
+      "durationSec": 6,
+      "priority": 10,
+      "cooldownSec": 300,
+      "interruptible": true,
+      "rive": {
+        "action": 19,
+        "pose": 1,
+        "mood": 0,
+        "props": [
+          "tea_cup"
+        ],
+        "fx": []
+      },
+      "poseKey": "stand",
+      "moodKey": "calm",
+      "trigger": {
+        "kind": "idle",
+        "weight": 2
+      },
+      "extraProps": [
+        "tea_cup"
+      ]
+    },
+    {
+      "id": 20,
+      "key": "slump_chair",
+      "category": "slack",
+      "name": "瘫在椅子上",
+      "phases": [
+        "slack"
+      ],
+      "type": "loop",
+      "durationSec": 8,
+      "priority": 10,
+      "cooldownSec": 0,
+      "interruptible": true,
+      "rive": {
+        "action": 20,
+        "pose": 2,
+        "mood": 0,
+        "props": [],
+        "fx": []
+      },
+      "poseKey": "prone",
+      "moodKey": "calm",
+      "trigger": {
+        "kind": "idle",
+        "weight": 3
+      },
+      "extraProps": []
+    },
+    {
+      "id": 21,
+      "key": "stare_window",
+      "category": "slack",
+      "name": "看窗外发呆",
+      "phases": [
+        "slack"
+      ],
+      "type": "loop",
+      "durationSec": 8,
+      "priority": 10,
+      "cooldownSec": 0,
+      "interruptible": true,
+      "rive": {
+        "action": 21,
+        "pose": 0,
+        "mood": 0,
+        "props": [],
+        "fx": []
+      },
+      "poseKey": "sit_desk",
+      "moodKey": "calm",
+      "trigger": {
+        "kind": "idle",
+        "weight": 3
+      },
+      "extraProps": []
+    },
+    {
+      "id": 22,
+      "key": "count_money",
+      "category": "slack",
+      "name": "数钱",
+      "phases": [
+        "slack"
+      ],
+      "type": "oneshot",
+      "durationSec": 4,
+      "priority": 30,
+      "cooldownSec": 600,
+      "interruptible": true,
+      "rive": {
+        "action": 22,
+        "pose": 0,
+        "mood": 5,
+        "props": [
+          "cash"
+        ],
+        "fx": [
+          "money"
+        ]
+      },
+      "poseKey": "sit_desk",
+      "moodKey": "smug",
+      "trigger": {
+        "kind": "time",
+        "name": "slack_every_minutes",
+        "minutes": 10
+      },
+      "extraProps": [
+        "cash"
+      ]
+    },
+    {
+      "id": 23,
+      "key": "yawn",
+      "category": "body",
+      "name": "打哈欠",
+      "phases": [
+        "work",
+        "slack",
+        "overtime"
+      ],
+      "type": "oneshot",
+      "durationSec": 2.5,
+      "priority": 15,
+      "cooldownSec": 180,
+      "interruptible": true,
+      "rive": {
+        "action": 23,
+        "pose": 0,
+        "mood": 3,
+        "props": [],
+        "fx": []
+      },
+      "poseKey": "sit_desk",
+      "moodKey": "sleepy",
+      "trigger": {
+        "kind": "idle",
+        "weight": 3
+      },
+      "extraProps": []
+    },
+    {
+      "id": 24,
+      "key": "nod_off",
+      "category": "body",
+      "name": "打瞌睡",
+      "phases": [
+        "work",
+        "slack",
+        "overtime"
+      ],
+      "type": "loop",
+      "durationSec": 8,
+      "priority": 12,
+      "cooldownSec": 0,
+      "interruptible": true,
+      "rive": {
+        "action": 24,
+        "pose": 0,
+        "mood": 3,
+        "props": [],
+        "fx": [
+          "z"
+        ]
+      },
+      "poseKey": "sit_desk",
+      "moodKey": "sleepy",
+      "trigger": {
+        "kind": "time",
+        "name": "idle_minutes",
+        "minutes": 10
+      },
+      "extraProps": []
+    },
+    {
+      "id": 25,
+      "key": "sleep_deep",
+      "category": "body",
+      "name": "睡熟",
+      "phases": [
+        "holiday",
+        "leave",
+        "offwork"
+      ],
+      "type": "loop",
+      "durationSec": 30,
+      "priority": 10,
+      "cooldownSec": 0,
+      "interruptible": true,
+      "rive": {
+        "action": 25,
+        "pose": 3,
+        "mood": 3,
+        "props": [],
+        "fx": [
+          "z"
+        ]
+      },
+      "poseKey": "lie",
+      "moodKey": "sleepy",
+      "trigger": {
+        "kind": "time",
+        "name": "idle_minutes",
+        "minutes": 5
+      },
+      "extraProps": []
+    },
+    {
+      "id": 26,
+      "key": "startled_awake",
+      "category": "body",
+      "name": "被惊醒",
+      "phases": [
+        "work",
+        "slack",
+        "overtime",
+        "holiday",
+        "leave",
+        "offwork"
+      ],
+      "type": "oneshot",
+      "durationSec": 1.5,
+      "priority": 60,
+      "cooldownSec": 0,
+      "interruptible": false,
+      "rive": {
+        "action": 26,
+        "pose": 1,
+        "mood": 4,
+        "props": [],
+        "fx": [
+          "surprise"
+        ]
+      },
+      "poseKey": "stand",
+      "moodKey": "surprised",
+      "trigger": {
+        "kind": "event",
+        "name": "tap",
+        "while_action": "sleep_deep"
+      },
+      "extraProps": []
+    },
+    {
+      "id": 27,
+      "key": "hungry",
+      "category": "body",
+      "name": "肚子饿",
+      "phases": [
+        "work",
+        "slack",
+        "overtime"
+      ],
+      "type": "oneshot",
+      "durationSec": 3,
+      "priority": 15,
+      "cooldownSec": 900,
+      "interruptible": true,
+      "rive": {
+        "action": 27,
+        "pose": 0,
+        "mood": 0,
+        "props": [],
+        "fx": []
+      },
+      "poseKey": "sit_desk",
+      "moodKey": "calm",
+      "trigger": {
+        "kind": "time",
+        "name": "time_window",
+        "ranges": [
+          "11:30-12:00",
+          "17:30-18:00"
+        ]
+      },
+      "extraProps": []
+    },
+    {
+      "id": 28,
+      "key": "lunch",
+      "category": "body",
+      "name": "吃午饭",
+      "phases": [
+        "work",
+        "slack"
+      ],
+      "type": "loop",
+      "durationSec": 20,
+      "priority": 12,
+      "cooldownSec": 0,
+      "interruptible": true,
+      "rive": {
+        "action": 28,
+        "pose": 0,
+        "mood": 1,
+        "props": [
+          "lunchbox"
+        ],
+        "fx": []
+      },
+      "poseKey": "sit_desk",
+      "moodKey": "happy",
+      "trigger": {
+        "kind": "time",
+        "name": "time_window",
+        "ranges": [
+          "12:00-13:00"
+        ]
+      },
+      "extraProps": [
+        "lunchbox"
+      ]
+    },
+    {
+      "id": 29,
+      "key": "tap_wag",
+      "category": "interact",
+      "name": "点击摇尾巴",
+      "phases": [
+        "work",
+        "slack",
+        "overtime",
+        "holiday",
+        "leave",
+        "offwork"
+      ],
+      "type": "oneshot",
+      "durationSec": 2,
+      "priority": 50,
+      "cooldownSec": 0,
+      "interruptible": true,
+      "rive": {
+        "action": 29,
+        "pose": null,
+        "mood": 1,
+        "props": [],
+        "fx": [],
+        "tailSpeed": 90
+      },
+      "poseKey": null,
+      "moodKey": "happy",
+      "trigger": {
+        "kind": "event",
+        "name": "tap"
+      },
+      "extraProps": []
+    },
+    {
+      "id": 30,
+      "key": "pet_head",
+      "category": "interact",
+      "name": "摸头享受",
+      "phases": [
+        "work",
+        "slack",
+        "overtime",
+        "holiday",
+        "leave",
+        "offwork"
+      ],
+      "type": "oneshot",
+      "durationSec": 3,
+      "priority": 50,
+      "cooldownSec": 0,
+      "interruptible": true,
+      "rive": {
+        "action": 30,
+        "pose": null,
+        "mood": 1,
+        "props": [],
+        "fx": [
+          "heart"
+        ]
+      },
+      "poseKey": null,
+      "moodKey": "happy",
+      "trigger": {
+        "kind": "event",
+        "name": "pet"
+      },
+      "extraProps": []
+    },
+    {
+      "id": 31,
+      "key": "double_flip",
+      "category": "interact",
+      "name": "双击翻滚",
+      "phases": [
+        "work",
+        "slack",
+        "overtime",
+        "holiday",
+        "leave",
+        "offwork"
+      ],
+      "type": "oneshot",
+      "durationSec": 2,
+      "priority": 50,
+      "cooldownSec": 0,
+      "interruptible": true,
+      "rive": {
+        "action": 31,
+        "pose": 1,
+        "mood": 1,
+        "props": [],
+        "fx": []
+      },
+      "poseKey": "stand",
+      "moodKey": "happy",
+      "trigger": {
+        "kind": "event",
+        "name": "double_tap"
+      },
+      "extraProps": []
+    },
+    {
+      "id": 32,
+      "key": "long_press_coax",
+      "category": "interact",
+      "name": "长按撒娇",
+      "phases": [
+        "work",
+        "slack",
+        "overtime",
+        "holiday",
+        "leave",
+        "offwork"
+      ],
+      "type": "loop",
+      "durationSec": 4,
+      "priority": 50,
+      "cooldownSec": 0,
+      "interruptible": true,
+      "rive": {
+        "action": 32,
+        "pose": null,
+        "mood": 1,
+        "props": [],
+        "fx": [
+          "heart"
+        ]
+      },
+      "poseKey": null,
+      "moodKey": "happy",
+      "trigger": {
+        "kind": "event",
+        "name": "long_press"
+      },
+      "extraProps": []
+    },
+    {
+      "id": 33,
+      "key": "dangle_legs",
+      "category": "interact",
+      "name": "被拖起晃腿",
+      "phases": [
+        "work",
+        "slack",
+        "overtime",
+        "holiday",
+        "leave",
+        "offwork"
+      ],
+      "type": "loop",
+      "durationSec": 0,
+      "priority": 80,
+      "cooldownSec": 0,
+      "interruptible": false,
+      "rive": {
+        "action": 33,
+        "pose": 4,
+        "mood": 4,
+        "props": [],
+        "fx": []
+      },
+      "poseKey": "held",
+      "moodKey": "surprised",
+      "trigger": {
+        "kind": "event",
+        "name": "drag_start"
+      },
+      "extraProps": []
+    },
+    {
+      "id": 34,
+      "key": "land_cushion",
+      "category": "interact",
+      "name": "落地缓冲",
+      "phases": [
+        "work",
+        "slack",
+        "overtime",
+        "holiday",
+        "leave",
+        "offwork"
+      ],
+      "type": "oneshot",
+      "durationSec": 0.6,
+      "priority": 80,
+      "cooldownSec": 0,
+      "interruptible": false,
+      "rive": {
+        "action": 34,
+        "pose": 1,
+        "mood": 0,
+        "props": [],
+        "fx": []
+      },
+      "poseKey": "stand",
+      "moodKey": "calm",
+      "trigger": {
+        "kind": "event",
+        "name": "drag_end"
+      },
+      "extraProps": []
+    },
+    {
+      "id": 35,
+      "key": "chase_tail",
+      "category": "interact",
+      "name": "追自己尾巴",
+      "phases": [
+        "slack",
+        "holiday",
+        "offwork"
+      ],
+      "type": "oneshot",
+      "durationSec": 4,
+      "priority": 10,
+      "cooldownSec": 600,
+      "interruptible": true,
+      "rive": {
+        "action": 35,
+        "pose": 1,
+        "mood": 1,
+        "props": [],
+        "fx": []
+      },
+      "poseKey": "stand",
+      "moodKey": "happy",
+      "trigger": {
+        "kind": "idle",
+        "weight": 2
+      },
+      "extraProps": []
+    },
+    {
+      "id": 36,
+      "key": "seek_attention",
+      "category": "interact",
+      "name": "求关注",
+      "phases": [
+        "work",
+        "slack",
+        "overtime",
+        "holiday",
+        "leave",
+        "offwork"
+      ],
+      "type": "oneshot",
+      "durationSec": 3,
+      "priority": 20,
+      "cooldownSec": 1200,
+      "interruptible": true,
+      "rive": {
+        "action": 36,
+        "pose": 1,
+        "mood": 0,
+        "props": [],
+        "fx": [
+          "surprise"
+        ]
+      },
+      "poseKey": "stand",
+      "moodKey": "calm",
+      "trigger": {
+        "kind": "time",
+        "name": "no_interaction_minutes",
+        "minutes": 20
+      },
+      "extraProps": []
+    },
+    {
+      "id": 37,
+      "key": "clock_in",
+      "category": "time",
+      "name": "打卡到岗",
+      "phases": [
+        "work"
+      ],
+      "type": "oneshot",
+      "durationSec": 3,
+      "priority": 70,
+      "cooldownSec": 0,
+      "interruptible": true,
+      "rive": {
+        "action": 37,
+        "pose": 1,
+        "mood": 1,
+        "props": [],
+        "fx": []
+      },
+      "poseKey": "stand",
+      "moodKey": "happy",
+      "trigger": {
+        "kind": "event",
+        "name": "phase_enter",
+        "phase": "work"
+      },
+      "extraProps": []
+    },
+    {
+      "id": 38,
+      "key": "check_watch",
+      "category": "time",
+      "name": "看表（临近下班）",
+      "phases": [
+        "work",
+        "overtime"
+      ],
+      "type": "oneshot",
+      "durationSec": 3,
+      "priority": 30,
+      "cooldownSec": 300,
+      "interruptible": true,
+      "rive": {
+        "action": 38,
+        "pose": 1,
+        "mood": 0,
+        "props": [
+          "watch"
+        ],
+        "fx": []
+      },
+      "poseKey": "stand",
+      "moodKey": "calm",
+      "trigger": {
+        "kind": "time",
+        "name": "near_offwork_minutes",
+        "minutes": 15
+      },
+      "extraProps": [
+        "watch"
+      ]
+    },
+    {
+      "id": 39,
+      "key": "offwork_cheer",
+      "category": "time",
+      "name": "下班庆祝",
+      "phases": [
+        "offwork"
+      ],
+      "type": "oneshot",
+      "durationSec": 3,
+      "priority": 85,
+      "cooldownSec": 0,
+      "interruptible": false,
+      "rive": {
+        "action": 39,
+        "pose": 1,
+        "mood": 1,
+        "props": [
+          "bag"
+        ],
+        "fx": [
+          "sparkle"
+        ]
+      },
+      "poseKey": "stand",
+      "moodKey": "happy",
+      "trigger": {
+        "kind": "event",
+        "name": "phase_enter",
+        "phase": "offwork"
+      },
+      "extraProps": []
+    },
+    {
+      "id": 40,
+      "key": "pack_leave",
+      "category": "time",
+      "name": "收拾背包离开",
+      "phases": [
+        "offwork"
+      ],
+      "type": "oneshot",
+      "durationSec": 4,
+      "priority": 60,
+      "cooldownSec": 0,
+      "interruptible": true,
+      "rive": {
+        "action": 40,
+        "pose": 1,
+        "mood": 0,
+        "props": [
+          "bag"
+        ],
+        "fx": []
+      },
+      "poseKey": "stand",
+      "moodKey": "calm",
+      "trigger": {
+        "kind": "event",
+        "name": "after_action",
+        "action": "offwork_cheer"
+      },
+      "extraProps": []
+    },
+    {
+      "id": 41,
+      "key": "holiday_lounge",
+      "category": "time",
+      "name": "放假戴墨镜躺椅",
+      "phases": [
+        "holiday"
+      ],
+      "type": "loop",
+      "durationSec": 30,
+      "priority": 10,
+      "cooldownSec": 0,
+      "interruptible": true,
+      "rive": {
+        "action": 41,
+        "pose": 3,
+        "mood": 0,
+        "props": [
+          "glasses",
+          "drink"
+        ],
+        "fx": []
+      },
+      "poseKey": "lie",
+      "moodKey": "calm",
+      "trigger": {
+        "kind": "event",
+        "name": "phase_enter",
+        "phase": "holiday"
+      },
+      "extraProps": [
+        "drink"
+      ]
+    },
+    {
+      "id": 42,
+      "key": "leave_blanket",
+      "category": "time",
+      "name": "请假裹被子",
+      "phases": [
+        "leave"
+      ],
+      "type": "loop",
+      "durationSec": 30,
+      "priority": 10,
+      "cooldownSec": 0,
+      "interruptible": true,
+      "rive": {
+        "action": 42,
+        "pose": 3,
+        "mood": 3,
+        "props": [
+          "blanket"
+        ],
+        "fx": [
+          "z"
+        ]
+      },
+      "poseKey": "lie",
+      "moodKey": "sleepy",
+      "trigger": {
+        "kind": "event",
+        "name": "phase_enter",
+        "phase": "leave"
+      },
+      "extraProps": [
+        "blanket"
+      ]
+    },
+    {
+      "id": 43,
+      "key": "overtime_night",
+      "category": "time",
+      "name": "加班熬夜（黑眼圈）",
+      "phases": [
+        "overtime"
+      ],
+      "type": "loop",
+      "durationSec": 10,
+      "priority": 12,
+      "cooldownSec": 0,
+      "interruptible": true,
+      "rive": {
+        "action": 43,
+        "pose": 0,
+        "mood": 3,
+        "props": [
+          "laptop",
+          "coffee"
+        ],
+        "fx": [],
+        "variants": [
+          "dark_circles"
+        ]
+      },
+      "poseKey": "sit_desk",
+      "moodKey": "sleepy",
+      "trigger": {
+        "kind": "event",
+        "name": "phase_enter",
+        "phase": "overtime"
+      },
+      "extraProps": [
+        "dark_circles"
+      ]
+    },
+    {
+      "id": 44,
+      "key": "friday_excite",
+      "category": "time",
+      "name": "周五兴奋",
+      "phases": [
+        "work"
+      ],
+      "type": "oneshot",
+      "durationSec": 3,
+      "priority": 25,
+      "cooldownSec": 7200,
+      "interruptible": true,
+      "rive": {
+        "action": 44,
+        "pose": 1,
+        "mood": 1,
+        "props": [],
+        "fx": [
+          "sparkle"
+        ]
+      },
+      "poseKey": "stand",
+      "moodKey": "happy",
+      "trigger": {
+        "kind": "time",
+        "name": "weekday",
+        "days": [
+          "fri"
+        ]
+      },
+      "extraProps": []
+    },
+    {
+      "id": 45,
+      "key": "monday_blue",
+      "category": "time",
+      "name": "周一丧",
+      "phases": [
+        "work"
+      ],
+      "type": "loop",
+      "durationSec": 6,
+      "priority": 12,
+      "cooldownSec": 600,
+      "interruptible": true,
+      "rive": {
+        "action": 45,
+        "pose": 0,
+        "mood": 3,
+        "props": [],
+        "fx": []
+      },
+      "poseKey": "sit_desk",
+      "moodKey": "sleepy",
+      "trigger": {
+        "kind": "time",
+        "name": "weekday",
+        "days": [
+          "mon"
+        ]
+      },
+      "extraProps": []
+    },
+    {
+      "id": 46,
+      "key": "todo_clear_smug",
+      "category": "time",
+      "name": "待办清零得意",
+      "phases": [
+        "work",
+        "slack",
+        "overtime"
+      ],
+      "type": "oneshot",
+      "durationSec": 3,
+      "priority": 40,
+      "cooldownSec": 60,
+      "interruptible": true,
+      "rive": {
+        "action": 46,
+        "pose": 0,
+        "mood": 5,
+        "props": [],
+        "fx": [
+          "sparkle"
+        ]
+      },
+      "poseKey": "sit_desk",
+      "moodKey": "smug",
+      "trigger": {
+        "kind": "event",
+        "name": "todo_cleared"
+      },
+      "extraProps": []
+    },
+    {
+      "id": 47,
+      "key": "slack_hour_badge",
+      "category": "easter",
+      "name": "摸鱼满一小时成就",
+      "phases": [
+        "slack"
+      ],
+      "type": "oneshot",
+      "durationSec": 4,
+      "priority": 45,
+      "cooldownSec": 86400,
+      "interruptible": true,
+      "rive": {
+        "action": 47,
+        "pose": 1,
+        "mood": 5,
+        "props": [],
+        "fx": [
+          "sparkle",
+          "money"
+        ]
+      },
+      "poseKey": "stand",
+      "moodKey": "smug",
+      "trigger": {
+        "kind": "time",
+        "name": "slack_total_minutes",
+        "minutes": 60,
+        "once_per_day": true
+      },
+      "extraProps": []
+    },
+    {
+      "id": 48,
+      "key": "payday_rain",
+      "category": "easter",
+      "name": "发薪日撒钱",
+      "phases": [
+        "work",
+        "slack",
+        "overtime",
+        "holiday",
+        "leave",
+        "offwork"
+      ],
+      "type": "oneshot",
+      "durationSec": 5,
+      "priority": 45,
+      "cooldownSec": 86400,
+      "interruptible": true,
+      "rive": {
+        "action": 48,
+        "pose": 1,
+        "mood": 1,
+        "props": [],
+        "fx": [
+          "money"
+        ]
+      },
+      "poseKey": "stand",
+      "moodKey": "happy",
+      "trigger": {
+        "kind": "time",
+        "name": "date",
+        "config": "payday"
+      },
+      "extraProps": []
+    },
+    {
+      "id": 49,
+      "key": "festival_costume",
+      "category": "easter",
+      "name": "节日换装彩蛋",
+      "phases": [
+        "work",
+        "slack",
+        "overtime",
+        "holiday",
+        "leave",
+        "offwork"
+      ],
+      "type": "loop",
+      "durationSec": 10,
+      "priority": 10,
+      "cooldownSec": 0,
+      "interruptible": true,
+      "rive": {
+        "action": 49,
+        "pose": null,
+        "mood": 1,
+        "props": [
+          "festival_hat"
+        ],
+        "fx": []
+      },
+      "poseKey": null,
+      "moodKey": "happy",
+      "trigger": {
+        "kind": "time",
+        "name": "date",
+        "config": "festivals"
+      },
+      "extraProps": [
+        "festival_hat"
+      ]
+    },
+    {
+      "id": 50,
+      "key": "sulk_ignored",
+      "category": "easter",
+      "name": "被忽略后赌气",
+      "phases": [
+        "work",
+        "slack",
+        "overtime",
+        "holiday",
+        "leave",
+        "offwork"
+      ],
+      "type": "loop",
+      "durationSec": 10,
+      "priority": 10,
+      "cooldownSec": 0,
+      "interruptible": true,
+      "rive": {
+        "action": 50,
+        "pose": 2,
+        "mood": 0,
+        "props": [],
+        "fx": [],
+        "variants": [
+          "back_turn"
+        ]
+      },
+      "poseKey": "prone",
+      "moodKey": "calm",
+      "trigger": {
+        "kind": "time",
+        "name": "no_interaction_minutes",
+        "minutes": 60
+      },
+      "extraProps": [
+        "back_turn"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="Front legs and paws">
+  <title>Front legs and paws</title>
+  <g stroke="#352923" stroke-width="9" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M205 328 C187 351 187 393 190 427 C191 444 204 451 221 449 L239 446 C247 444 251 436 249 426 L245 350 Z" fill="#F8D49A"/>
+    <path d="M307 328 C325 351 325 393 322 427 C321 444 308 451 291 449 L273 446 C265 444 261 436 263 426 L267 350 Z" fill="#F8D49A"/>
+    <path d="M202 437 L202 443 M219 438 L219 444 M293 438 L293 444 M310 437 L310 443" fill="none" stroke="#352923" stroke-width="4"/>
+  </g>
+</svg>

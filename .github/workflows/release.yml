@@ -55,7 +55,7 @@ jobs:
           echo ""
           echo "=== Generating latest.json via gen-latest.py ==="
           VERSION=$(python3 -c "import json; print(json.load(open('widget/src-tauri/tauri.conf.json'))['version'])")
-          python3 scripts/gen-latest.py "$VERSION" "${GITHUB_REF_NAME}" "ShawnNggg/-"
+          python3 scripts/gen-latest.py "$VERSION" "${GITHUB_REF_NAME}" "ShawnNggg/Watermelon"
 
           echo ""
           echo "=== final release/ ==="

@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="Snack bag">
+<title>Snack bag</title>
+<g stroke="#352923" stroke-width="8" stroke-linecap="round" stroke-linejoin="round">
+
+  <path d="M170 116 L342 116 L364 163 L345 362 Q256 393 167 362 L148 163 Z" fill="#F5C451"/>
+  <path d="M158 163 L354 163" fill="none" stroke="#352923" stroke-width="7"/>
+  <path d="M196 222 Q256 182 316 222 L305 285 Q256 316 207 285 Z" fill="#FFF3DC" stroke="none"/>
+  <circle cx="230" cy="246" r="7" fill="#E9AD63" stroke="none"/>
+  <circle cx="278" cy="258" r="7" fill="#E9AD63" stroke="none"/>
+
+</g>
+</svg>

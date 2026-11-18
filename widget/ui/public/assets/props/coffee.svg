@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Watermelon 灰盒占位：coffee（Rive 导入用，可直接整体替换成正式素材） -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64"
+     fill="none" stroke="#8a8a8a" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round">
+  <title>coffee</title>
+  <path d="M16 16h28l-4 36H20z" fill="#e8e8e8"/>
+  <path d="M14 12h32v6H14z" fill="#dcdcdc"/>
+  <path d="M44 24h5a5 5 0 0 1 0 10h-5"/>
+</svg>

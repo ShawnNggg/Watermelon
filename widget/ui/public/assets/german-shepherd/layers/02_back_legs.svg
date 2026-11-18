@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="Back legs">
+  <title>Back legs</title>
+  <g stroke="#352923" stroke-width="9" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M197 352 C166 362 158 394 166 424 L174 444 C179 456 199 458 217 451 L237 430 L242 370 Z" fill="#E9AD63"/>
+    <path d="M315 352 C346 362 354 394 346 424 L338 444 C333 456 313 458 295 451 L275 430 L270 370 Z" fill="#E9AD63"/>
+    <path d="M178 438 Q190 443 200 438 M312 438 Q322 443 334 438" fill="none" stroke="#352923" stroke-width="5"/>
+  </g>
+</svg>

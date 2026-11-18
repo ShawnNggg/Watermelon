@@ -28,6 +28,7 @@ fn main() {
             // macOS：Accessory 模式 → 不占 Dock、不抢菜单栏，纯桌面挂件
             #[cfg(target_os = "macos")]
             app.set_activation_policy(tauri::ActivationPolicy::Accessory);
+
             setup_tray(app)?;
             Ok(())
         })
@@ -40,7 +41,6 @@ fn main() {
         .expect("error while running watermelon widget");
 }
 
-// 前端量出内容高度后调这里：窗口跟着内容长高，避免出现滚动条
 #[tauri::command]
 fn set_widget_height(window: tauri::WebviewWindow, height: f64) {
     let scale = window.scale_factor().unwrap_or(1.0);

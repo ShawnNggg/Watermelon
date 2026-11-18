@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="Keyboard">
+<title>Keyboard</title>
+<g stroke="#352923" stroke-width="8" stroke-linecap="round" stroke-linejoin="round">
+
+  <rect x="78" y="168" width="356" height="176" rx="18" fill="#F8D49A"/>
+  <rect x="100" y="190" width="30" height="24" rx="5" fill="#FFF3DC" stroke="none"/><rect x="142" y="190" width="30" height="24" rx="5" fill="#FFF3DC" stroke="none"/><rect x="184" y="190" width="30" height="24" rx="5" fill="#FFF3DC" stroke="none"/><rect x="226" y="190" width="30" height="24" rx="5" fill="#FFF3DC" stroke="none"/><rect x="268" y="190" width="30" height="24" rx="5" fill="#FFF3DC" stroke="none"/><rect x="310" y="190" width="30" height="24" rx="5" fill="#FFF3DC" stroke="none"/><rect x="352" y="190" width="30" height="24" rx="5" fill="#FFF3DC" stroke="none"/><rect x="100" y="228" width="30" height="24" rx="5" fill="#FFF3DC" stroke="none"/><rect x="142" y="228" width="30" height="24" rx="5" fill="#FFF3DC" stroke="none"/><rect x="184" y="228" width="30" height="24" rx="5" fill="#FFF3DC" stroke="none"/><rect x="226" y="228" width="30" height="24" rx="5" fill="#FFF3DC" stroke="none"/><rect x="268" y="228" width="30" height="24" rx="5" fill="#FFF3DC" stroke="none"/><rect x="310" y="228" width="30" height="24" rx="5" fill="#FFF3DC" stroke="none"/><rect x="352" y="228" width="30" height="24" rx="5" fill="#FFF3DC" stroke="none"/><rect x="100" y="266" width="30" height="24" rx="5" fill="#FFF3DC" stroke="none"/><rect x="142" y="266" width="30" height="24" rx="5" fill="#FFF3DC" stroke="none"/><rect x="184" y="266" width="30" height="24" rx="5" fill="#FFF3DC" stroke="none"/><rect x="226" y="266" width="30" height="24" rx="5" fill="#FFF3DC" stroke="none"/><rect x="268" y="266" width="30" height="24" rx="5" fill="#FFF3DC" stroke="none"/><rect x="310" y="266" width="30" height="24" rx="5" fill="#FFF3DC" stroke="none"/><rect x="352" y="266" width="30" height="24" rx="5" fill="#FFF3DC" stroke="none"/>
+  <rect x="184" y="305" width="144" height="18" rx="6" fill="#E9AD63" stroke="none"/>
+
+</g>
+</svg>

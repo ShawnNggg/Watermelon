@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="Blush cheeks">
+  <title>Blush cheeks</title>
+  <g stroke="#352923" stroke-width="9" stroke-linecap="round" stroke-linejoin="round">
+    <ellipse cx="192" cy="224" rx="10" ry="5" fill="#F47F83" stroke="none" opacity=".8"/>
+    <ellipse cx="320" cy="224" rx="10" ry="5" fill="#F47F83" stroke="none" opacity=".8"/>
+  </g>
+</svg>

@@ -3,8 +3,11 @@ import { LegacyDogRenderer } from "./LegacyDogRenderer";
 import { RiveDogRenderer } from "./RiveDogRenderer";
 import type { RiveRendererOptions } from "./RiveDogRenderer";
 
-/** renderer 选择持久化 key —— 存 localStorage */
-export const RENDERER_KEY = "watermelon-widget-renderer";
+/** renderer 选择持久化 key —— 存 localStorage（v2：默认改为 Rive，旧 key 不再读取） */
+export const RENDERER_KEY = "watermelon-widget-renderer-v2";
+
+/** 默认渲染器：Rive。缺 dog.riv 时 RiveDogRenderer 内部自动回退 Legacy。 */
+export const DEFAULT_RENDERER_KIND: RendererKind = "rive";
 
 /**
  * 根据配置创建 Renderer 的工厂。
@@ -25,7 +28,7 @@ export function createRenderer(
   }
   if (k === "rive" || k === "auto") {
     if (opts?.rive?.rivUrl) {
-      // RiveDogRenderer 内部自己处理 fallback —— 但 factory 先 check 一下 .riv 文件存不存在
+      // RiveDogRenderer 内部自己处理 fallback —— .riv 加载失败会自动退回 Legacy
       return new RiveDogRenderer(opts.rive);
     }
     // 没传 rivUrl → 自动回退 legacy
@@ -42,10 +45,10 @@ export function saveRendererKind(kind: RendererKind): void {
   } catch { /* noop */ }
 }
 
-export function loadRendererKind(): RendererKind | null {
+export function loadRendererKind(): RendererKind {
   try {
     const v = localStorage.getItem(RENDERER_KEY);
     if (v === "legacy" || v === "rive") return v;
   } catch { /* noop */ }
-  return null;
+  return DEFAULT_RENDERER_KIND;
 }

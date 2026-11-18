@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Watermelon · Dog 灰盒（Rive 编辑器导入用）
+
+  用法：Rive 编辑器 → New File → 直接把这个 SVG 拖进 Artboard，或 File → Import → SVG。
+  分组名会被 Rive 保留成节点名，便于后面挂骨骼、做状态机。
+  图层顺序（后→前）已按 docs/rive-graybox-checklist.md 排好：
+      shadow → props_back → body → face → props_front → accessories → fx
+
+  导入后还需要手动完成（Rive 里做，代码侧已就绪）：
+  1. 建骨骼：root / spine / head / earL / earR / armL / armR / legL / legR / tail1-3
+  2. 建空骨骼挂点：socket_pawL / socket_pawR / socket_head / socket_desk，把道具挂上去
+  3. 建 5 个姿态动画 + 8 个过渡 + blink + mood_0..5 + action_N（先做 12 个 MVP）
+  4. 状态机命名 DogSM，输入名严格按 checklist 的表
+  5. 导出 dog.riv 到 widget/ui/public/assets/dog.riv
+-->
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <defs>
+    <style>
+      .gb { fill: #d9d9d9; stroke: #8a8a8a; stroke-width: 3; }
+      .gb-light { fill: #ececec; stroke: #8a8a8a; stroke-width: 3; }
+      .gb-dark { fill: #b8b8b8; stroke: #8a8a8a; stroke-width: 3; }
+      .label { font-family: -apple-system, Helvetica, sans-serif; font-size: 13px; fill: #666; }
+      .prop { display: none; }   /* 道具默认隐藏，改成 inline 可单独预览 */
+      .fx { display: none; }
+    </style>
+  </defs>
+
+  <!-- ===== 1. 影子 ===== -->
+  <g id="shadow">
+    <ellipse cx="256" cy="452" rx="150" ry="24" fill="#000000" opacity="0.12"/>
+  </g>
+
+  <!-- ===== 2. 身后道具（back） ===== -->
+  <g id="props_back">
+    <g id="prop_bag" class="prop">
+      <rect x="372" y="330" width="86" height="96" rx="12" class="gb"/>
+      <text x="382" y="386" class="label">bag</text>
+    </g>
+  </g>
+
+  <!-- ===== 3. 身体 ===== -->
+  <g id="body">
+    <!-- 躯干 -->
+    <ellipse id="torso" cx="256" cy="352" rx="112" ry="104" class="gb"/>
+
+    <!-- 四肢 -->
+    <g id="legs">
+      <rect id="legL_front" x="176" y="408" width="42" height="58" rx="18" class="gb-light"/>
+      <rect id="legR_front" x="294" y="408" width="42" height="58" rx="18" class="gb-light"/>
+      <rect id="legL_back" x="196" y="398" width="38" height="52" rx="16" class="gb-dark"/>
+      <rect id="legR_back" x="278" y="398" width="38" height="52" rx="16" class="gb-dark"/>
+    </g>
+
+    <!-- 手臂（敲键盘用） -->
+    <g id="arms">
+      <rect id="armL" x="150" y="330" width="34" height="72" rx="15" class="gb-light" transform="rotate(12 167 366)"/>
+      <rect id="armR" x="328" y="330" width="34" height="72" rx="15" class="gb-light" transform="rotate(-12 345 366)"/>
+    </g>
+
+    <!-- 头 -->
+    <g id="head">
+      <circle id="head_shape" cx="256" cy="212" r="96" class="gb"/>
+      <ellipse id="earL" cx="176" cy="140" rx="30" ry="52" class="gb-dark" transform="rotate(-22 176 140)"/>
+      <ellipse id="earR" cx="336" cy="140" rx="30" ry="52" class="gb-dark" transform="rotate(22 336 140)"/>
+      <ellipse id="muzzle" cx="256" cy="252" rx="46" ry="34" class="gb-light"/>
+      <ellipse id="nose" cx="256" cy="238" rx="13" ry="10" fill="#8a8a8a"/>
+    </g>
+
+    <!-- 尾巴（3 段，便于做摆动） -->
+    <g id="tail">
+      <path id="tail1" d="M352 372 Q392 352 400 320" fill="none" stroke="#b8b8b8" stroke-width="22" stroke-linecap="round"/>
+      <path id="tail2" d="M400 320 Q408 296 396 274" fill="none" stroke="#b8b8b8" stroke-width="20" stroke-linecap="round"/>
+      <path id="tail3" d="M396 274 Q386 258 392 244" fill="none" stroke="#b8b8b8" stroke-width="18" stroke-linecap="round"/>
+    </g>
+  </g>
+
+  <!-- ===== 4. 脸（表情） ===== -->
+  <g id="face">
+    <g id="eyes">
+      <ellipse id="eyeL" cx="224" cy="206" rx="12" ry="14" fill="#4a4a4a"/>
+      <ellipse id="eyeR" cx="288" cy="206" rx="12" ry="14" fill="#4a4a4a"/>
+      <circle id="eyeL_dot" cx="228" cy="201" r="4" fill="#ffffff"/>
+      <circle id="eyeR_dot" cx="292" cy="201" r="4" fill="#ffffff"/>
+    </g>
+    <g id="brows">
+      <rect id="browL" x="206" y="178" width="36" height="7" rx="3.5" fill="#8a8a8a"/>
+      <rect id="browR" x="270" y="178" width="36" height="7" rx="3.5" fill="#8a8a8a"/>
+    </g>
+    <path id="mouth" d="M236 268 Q256 284 276 268" fill="none" stroke="#8a8a8a" stroke-width="5" stroke-linecap="round"/>
+  </g>
+
+  <!-- ===== 5. 身前道具（front） ===== -->
+  <g id="props_front">
+    <g id="prop_laptop" class="prop">
+      <rect x="176" y="330" width="160" height="86" rx="8" class="gb-dark"/>
+      <rect x="192" y="344" width="128" height="58" rx="4" class="gb-light"/>
+      <text x="232" y="380" class="label">laptop</text>
+    </g>
+    <g id="prop_phone" class="prop">
+      <rect x="238" y="318" width="38" height="66" rx="8" class="gb-dark"/>
+      <rect x="244" y="326" width="26" height="48" rx="3" class="gb-light"/>
+      <text x="240" y="404" class="label">phone</text>
+    </g>
+    <g id="prop_coffee" class="prop">
+      <rect x="320" y="318" width="44" height="52" rx="8" class="gb-light"/>
+      <path d="M364 330 q22 6 0 24" fill="none" stroke="#8a8a8a" stroke-width="5"/>
+      <text x="312" y="392" class="label">coffee</text>
+    </g>
+    <g id="prop_phones" class="prop">
+      <path d="M192 200 q-24 -22 0 -44" fill="none" stroke="#8a8a8a" stroke-width="9" stroke-linecap="round"/>
+      <path d="M320 200 q24 -22 0 -44" fill="none" stroke="#8a8a8a" stroke-width="9" stroke-linecap="round"/>
+      <text x="228" y="130" class="label">phones</text>
+    </g>
+    <g id="prop_snack" class="prop">
+      <rect x="150" y="352" width="56" height="42" rx="6" class="gb-dark"/>
+      <text x="156" y="380" class="label">snack</text>
+    </g>
+    <g id="prop_glasses" class="prop">
+      <circle cx="224" cy="206" r="26" fill="none" stroke="#6a6a6a" stroke-width="5"/>
+      <circle cx="288" cy="206" r="26" fill="none" stroke="#6a6a6a" stroke-width="5"/>
+      <rect x="248" y="202" width="16" height="5" rx="2.5" fill="#6a6a6a"/>
+    </g>
+  </g>
+
+  <!-- ===== 6. 配饰 ===== -->
+  <g id="accessories">
+    <g id="acc_collar" class="prop">
+      <rect x="196" y="296" width="120" height="16" rx="8" class="gb-dark"/>
+    </g>
+  </g>
+
+  <!-- ===== 7. 特效 ===== -->
+  <g id="fx">
+    <text id="fx_z" class="fx" x="360" y="150" font-size="34" fill="#8a8a8a">Z</text>
+    <text id="fx_heart" class="fx" x="352" y="176" font-size="30" fill="#c96a6a">♥</text>
+    <text id="fx_surprise" class="fx" x="150" y="150" font-size="34" fill="#8a8a8a">!</text>
+    <text id="fx_sweat" class="fx" x="342" y="196" font-size="26" fill="#6a8ac9">💧</text>
+    <text id="fx_money" class="fx" x="146" y="182" font-size="30" fill="#a08a4a">¥</text>
+    <text id="fx_sparkle" class="fx" x="356" y="206" font-size="30" fill="#a0a0a0">✦</text>
+  </g>
+
+  <!-- ===== 挂点占位（Rive 里换成空骨骼，这里只是标记位置） ===== -->
+  <g id="sockets" opacity="0.35">
+    <circle id="socket_pawL" cx="150" cy="400" r="7" fill="#c96a6a"/>
+    <circle id="socket_pawR" cx="362" cy="400" r="7" fill="#c96a6a"/>
+    <circle id="socket_head" cx="256" cy="120" r="7" fill="#6aa08a"/>
+    <circle id="socket_desk" cx="256" cy="420" r="7" fill="#6a8ac9"/>
+  </g>
+</svg>

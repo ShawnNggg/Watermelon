@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="Head base and German Shepherd mask">
+  <title>Head base and German Shepherd mask</title>
+  <g stroke="#352923" stroke-width="9" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M256 86 C208 86 171 119 164 169 C156 222 183 264 220 279 L292 279 C329 264 356 222 348 169 C341 119 304 86 256 86 Z" fill="#E9AD63"/>
+    <path d="M184 146 C202 115 228 103 256 103 C284 103 310 115 328 146 L307 184 L205 184 Z" fill="#352923" stroke="none"/>
+    <path d="M190 194 C207 177 228 174 245 189 L256 215 L267 189 C284 174 305 177 322 194 C317 228 292 250 256 250 C220 250 195 228 190 194 Z" fill="#F8D49A" stroke="none"/>
+  </g>
+</svg>

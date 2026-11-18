@@ -41,7 +41,7 @@ export class LegacyDogRenderer implements DogRenderer {
     this.dog = document.getElementById("dog");
 
     // 绑定点击事件 —— 用户点小狗 → notify Shell 发 BehaviorEvent.tap
-    this.widget.addEventListener("click", this.handleTap);
+    if (opts.bindTap !== false) this.widget.addEventListener("click", this.handleTap);
   }
 
   setAction(action: PetAction): void {
@@ -93,7 +93,7 @@ export class LegacyDogRenderer implements DogRenderer {
   }
 
   destroy(): void {
-    this.widget.removeEventListener("click", this.handleTap);
+    if (this.opts.bindTap !== false) this.widget.removeEventListener("click", this.handleTap);
     if (this.dog) this.dog.style.animationPlayState = "";
     // DOM 元素不 remove —— 由调用方（页面本身）管理
   }

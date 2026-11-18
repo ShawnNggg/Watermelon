@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Watermelon 灰盒占位：watch（Rive 导入用，可直接整体替换成正式素材） -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64"
+     fill="none" stroke="#8a8a8a" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round">
+  <title>watch</title>
+  <circle cx="32" cy="32" r="13" fill="#e8e8e8"/>
+  <path d="M32 24v9l6 4"/>
+  <path d="M25 20l2-10h10l2 10M25 44l2 10h10l2-10"/>
+</svg>

@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="action_pet_head">
+  <title>action_pet_head</title>
+  <g stroke="#352923" stroke-width="9" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M150 100 Q135 85 150 70 Q165 85 150 100 Z" fill="#F47F83" stroke="none"/>
+    <path d="M362 100 Q347 85 362 70 Q377 85 362 100 Z" fill="#F47F83" stroke="none"/>
+  </g>
+</svg>

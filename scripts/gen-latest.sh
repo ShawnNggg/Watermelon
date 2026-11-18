@@ -5,7 +5,7 @@ set -euo pipefail
 
 VERSION="${1:?usage: gen-latest.sh <version> <github_tag> [repo]}"
 TAG="${2:?missing tag}"
-REPO="${3:-ShawnNggg/-}"
+REPO="${3:-ShawnNggg/Watermelon}"
 BUNDLE_DIR="${BUNDLE_DIR:-widget/src-tauri/target/release/bundle}"
 OUT_DIR="${OUT_DIR:-release}"
 

@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="Glasses">
+<title>Glasses</title>
+<g stroke="#352923" stroke-width="8" stroke-linecap="round" stroke-linejoin="round">
+
+  <path d="M70 204 L116 204 M396 204 L442 204 M231 222 Q256 208 281 222" fill="none" stroke="#352923" stroke-width="10"/>
+  <rect x="92" y="192" width="137" height="104" rx="35" fill="#8FC9E8" fill-opacity=".32"/>
+  <rect x="283" y="192" width="137" height="104" rx="35" fill="#8FC9E8" fill-opacity=".32"/>
+  <path d="M229 224 L283 224" fill="none" stroke="#352923" stroke-width="10"/>
+
+</g>
+</svg>

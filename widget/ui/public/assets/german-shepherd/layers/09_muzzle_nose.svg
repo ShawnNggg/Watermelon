@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="Muzzle and nose">
+  <title>Muzzle and nose</title>
+  <g stroke="#352923" stroke-width="9" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M215 219 C221 202 239 197 256 197 C273 197 291 202 297 219 C293 242 276 256 256 256 C236 256 219 242 215 219 Z" fill="#F8D49A"/>
+    <ellipse cx="256" cy="220" rx="18" ry="13" fill="#352923" stroke="none"/>
+    <path d="M256 231 L256 241 M256 241 C247 251 236 248 232 241 M256 241 C265 251 276 248 280 241" fill="none" stroke-width="5"/>
+  </g>
+</svg>

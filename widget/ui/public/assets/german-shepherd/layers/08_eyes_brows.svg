@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="Eyes and brows">
+  <title>Eyes and brows</title>
+  <g stroke="#352923" stroke-width="9" stroke-linecap="round" stroke-linejoin="round">
+    <ellipse cx="218" cy="190" rx="11" ry="16" fill="#352923" stroke="none"/>
+    <ellipse cx="294" cy="190" rx="11" ry="16" fill="#352923" stroke="none"/>
+    <circle cx="221" cy="185" r="3.5" fill="#FFF9EF" stroke="none"/>
+    <circle cx="297" cy="185" r="3.5" fill="#FFF9EF" stroke="none"/>
+    <path d="M201 166 Q212 158 224 165 M288 165 Q300 158 311 166" fill="none" stroke-width="5"/>
+  </g>
+</svg>

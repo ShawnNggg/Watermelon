@@ -7,7 +7,7 @@ import json, sys, os, glob, datetime
 
 VERSION = sys.argv[1]
 TAG = sys.argv[2]
-REPO = sys.argv[3] if len(sys.argv) > 3 else "ShawnNggg/-"
+REPO = sys.argv[3] if len(sys.argv) > 3 else "ShawnNggg/Watermelon"
 BUNDLE = os.environ.get("BUNDLE_DIR", "widget/src-tauri/target/release/bundle")
 OUT_DIR = os.environ.get("OUT_DIR", "release")
 

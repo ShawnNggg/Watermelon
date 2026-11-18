@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="Work bag">
+<title>Work bag</title>
+<g stroke="#352923" stroke-width="8" stroke-linecap="round" stroke-linejoin="round">
+
+  <path d="M151 180 L361 180 L384 380 Q256 405 128 380 Z" fill="#E9AD63"/>
+  <path d="M195 181 L195 143 Q195 93 256 93 Q317 93 317 143 L317 181" fill="none" stroke="#352923" stroke-width="13"/>
+  <rect x="212" y="236" width="88" height="70" rx="12" fill="#F8D49A"/>
+  <path d="M236 260 L276 260 M256 241 L256 282" fill="none" stroke="#E9AD63" stroke-width="6"/>
+
+</g>
+</svg>
