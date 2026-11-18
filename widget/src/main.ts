@@ -4,8 +4,7 @@ import { resolveDay as resolveDayPure } from "./domain";
 import type { DayOverride, DayOverrides, HolidayInfo, MoyuSession, RestReason, WorkdayResult, WorkSchedule } from "./domain";
 import { BehaviorEngine, moodOf } from "./behavior";
 import type { BehaviorOutput, BehaviorSnapshot, PetAction } from "./behavior";
-import { ACTIONS } from "./avatar";
-import { createRenderer, loadRendererKind, saveRendererKind } from "./renderer";
+import { createRenderer } from "./renderer";
 import type { DogRenderer } from "./renderer";
 import { GamesPanel } from "./games";
 
@@ -1351,14 +1350,9 @@ applySkin(S.skin);
 renderTodos();
 setAwake(isVisible());
 
-/* ============ 渲染器初始化（Legacy / Rive） ============ */
+/* ============ 渲染器初始化（固定 Rive） ============ */
 function initRenderer() {
-  // 默认就是 Rive（loadRendererKind 缺省返回 "rive"）；
-  // 只有用户显式切回「原生 SVG」时才完全不建渲染器，由 main.ts 自己操作 DOM。
-  if (loadRendererKind() !== "rive") {
-    renderer = null;
-    return;
-  }
+  // 固定使用 Rive；缺 assets/dog.riv 时 RiveDogRenderer 内部自动回退原生 SVG
   try {
     renderer = createRenderer("rive", {
       rive: {
@@ -1375,80 +1369,6 @@ function initRenderer() {
   }
 }
 initRenderer();
-renderActionDebug();
-
-/* Rive 真实加载结果回显 —— 避免"切了但看起来没变"的困惑 */
-function reportRiveState() {
-  const el = document.getElementById("riveAssetState");
-  if (!el) return;
-  if (loadRendererKind() !== "rive") {
-    el.textContent = "";
-    return;
-  }
-  // boot 是异步的（拉 wasm + riv），给 1.5s 后检查实际状态
-  setTimeout(() => {
-    const active = !!(renderer as { isActive?: boolean } | null)?.isActive;
-    el.style.color = active ? "var(--flesh)" : "var(--text-dim)";
-    el.textContent = active
-      ? "Rive 已加载 ✓"
-      : "Rive 未加载（缺 assets/dog.riv 或状态机名不是 DogSM），当前用原生 SVG";
-  }, 1500);
-}
-reportRiveState();
-
-/** 设置面板 → 动作库调试列表（50 个动作，点一下立刻预览） */
-function renderActionDebug() {
-  const host = document.getElementById("actionGrid");
-  if (!host) return;
-  host.innerHTML = "";
-  for (const def of ACTIONS) {
-    const btn = document.createElement("button");
-    btn.className = "act-btn";
-    btn.dataset.id = String(def.id);
-    btn.title = `${def.key} · ${def.type} · p${def.priority}`;
-    btn.textContent = `${def.id}`;
-    btn.onclick = () => {
-      const name = document.getElementById("actNow");
-      if (!_lastSnap) {
-        if (name) name.textContent = "状态尚未就绪，稍后再试";
-        return;
-      }
-      try {
-        const out = be.preview(def.id, _lastSnap);
-        // 同一个 data-act 不会重播动画 —— 先摘掉再设回去，强制重放
-        const w = $("widget");
-        if (w.dataset.act === out.action) {
-          delete w.dataset.act;
-          void w.offsetWidth;
-        }
-        applyOutput(out, moodOf(_lastSnap));
-        // 不要立刻 tick：preview 已经重置了冷却，这里只接上下一轮定时
-        clearTimeout(petTimer);
-        petTimer = setTimeout(rotateAct, be.ROTATE_INTERVAL_MS || 120000);
-        if (name) name.textContent = `${def.id} · ${def.key}（${out.action}）`;
-      } catch (e) {
-        if (name) name.textContent = `预览失败：${String(e)}`;
-      }
-    };
-    host.appendChild(btn);
-  }
-}
-
-/** 渲染器切换按钮 —— 保存后刷新页面生效 */
-function bindRendererSwitch() {
-  const legacyBtn = document.getElementById("rendererLegacy");
-  const riveBtn = document.getElementById("rendererRive");
-  if (!legacyBtn || !riveBtn) return;
-  const paint = () => {
-    const kind = loadRendererKind();
-    legacyBtn.classList.toggle("on", kind !== "rive");
-    riveBtn.classList.toggle("on", kind === "rive");
-  };
-  legacyBtn.onclick = () => { saveRendererKind("legacy"); paint(); location.reload(); };
-  riveBtn.onclick = () => { saveRendererKind("rive"); paint(); location.reload(); };
-  paint();
-}
-bindRendererSwitch();
 
 document.addEventListener("visibilitychange", () => setAwake(isVisible()));
 // 托盘显示/隐藏窗口时由 Rust 发事件，精确控制暂停

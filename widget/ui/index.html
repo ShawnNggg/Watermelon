@@ -541,16 +541,6 @@
   .skin-name { font-size: 9.5px; color: var(--text-dim); line-height: 1.1; white-space: nowrap; }
   .skin-btn.on .skin-name { color: var(--flesh); font-weight: 700; }
 
-  /* 动作库调试面板（设置 → 动作库） */
-  .act-now { font-size: 10.5px; color: var(--text-dim); margin-bottom: 6px; }
-  .act-grid { display: grid; grid-template-columns: repeat(10, 1fr); gap: 4px; }
-  .act-btn {
-    padding: 5px 0; font-size: 10px; border-radius: 6px; font-family: inherit;
-    border: 1px solid var(--line); background: var(--cream); color: var(--text-dim);
-    cursor: pointer; transition: background .12s, color .12s, border-color .12s;
-  }
-  .act-btn:hover { background: var(--accent-soft); color: var(--flesh); border-color: var(--flesh); }
-
   /* 演示时间机 */
   .demo-row { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 14px; justify-content: center; }
   .demo-note { font-size: 11px; color: var(--text-dim); text-align: center; margin-top: 6px; }
@@ -873,20 +863,6 @@
 
     <h3 style="margin-top:12px">皮肤</h3>
     <div class="skin-row" id="skinRow"></div>
-
-    <h3 style="margin-top:12px">渲染器</h3>
-    <div class="seg-row">
-      <button class="seg-btn" id="rendererLegacy">原生 SVG</button>
-      <button class="seg-btn on" id="rendererRive">Rive</button>
-    </div>
-    <div style="font-size:10.5px;color:var(--text-dim);margin-top:4px">
-      切换后自动刷新。缺 assets/dog.riv 时会自动回退原生 SVG。
-    </div>
-    <div style="font-size:10.5px;margin-top:4px" id="riveAssetState"></div>
-
-    <h3 style="margin-top:12px">动作库（点击预览）</h3>
-    <div class="act-now" id="actNow">未播放</div>
-    <div class="act-grid" id="actionGrid"></div>
   </div>
 
   <!-- 摸鱼游戏抽屉 -->
