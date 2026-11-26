@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 256 256">
+  <!-- 瓜时 / Watermelon Clock — 小尺寸简化版（16–64px：加粗瓜皮与指针，去掉细籽） -->
+  <g transform="translate(20.48 20.48) scale(0.84)">
+    <rect x="8" y="8" width="240" height="240" rx="58" fill="#FFF9F2"/>
+    <circle cx="128" cy="128" r="100" fill="#1F8A5B"/>
+    <circle cx="128" cy="128" r="82" fill="#7BD389"/>
+    <circle cx="128" cy="128" r="68" fill="#FF5D73"/>
+    <ellipse cx="96" cy="112" rx="9" ry="13" fill="#232323" transform="rotate(-24 96 112)"/>
+    <ellipse cx="160" cy="112" rx="9" ry="13" fill="#232323" transform="rotate(24 160 112)"/>
+    <line x1="128" y1="128" x2="128" y2="76" stroke="#FFF9F2" stroke-width="22" stroke-linecap="round"/>
+    <line x1="128" y1="128" x2="170" y2="128" stroke="#FFF9F2" stroke-width="22" stroke-linecap="round"/>
+  </g>
+</svg>

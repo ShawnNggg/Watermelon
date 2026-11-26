@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 256 256">
+  <!-- 瓜时 / Watermelon Clock — 主标志（含 macOS 图标安全边距） -->
+  <g transform="translate(20.48 20.48) scale(0.84)">
+    <rect x="8" y="8" width="240" height="240" rx="58" fill="#FFF9F2"/>
+    <circle cx="128" cy="128" r="98" fill="#1F8A5B"/>
+    <circle cx="128" cy="128" r="86" fill="#7BD389"/>
+    <circle cx="128" cy="128" r="74" fill="#FF5D73"/>
+    <ellipse cx="92" cy="104" rx="6" ry="9" fill="#232323" transform="rotate(-24 92 104)"/>
+    <ellipse cx="98" cy="164" rx="6" ry="9" fill="#232323" transform="rotate(16 98 164)"/>
+    <ellipse cx="168" cy="96" rx="6" ry="9" fill="#232323" transform="rotate(28 168 96)"/>
+    <line x1="128" y1="128" x2="128" y2="72" stroke="#FFF9F2" stroke-width="12" stroke-linecap="round"/>
+    <line x1="128" y1="128" x2="170" y2="128" stroke="#FFF9F2" stroke-width="12" stroke-linecap="round"/>
+    <circle cx="128" cy="128" r="9" fill="#FFF9F2"/>
+  </g>
+</svg>
